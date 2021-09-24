@@ -1,0 +1,5 @@
+pkg/http/assets/css/
+pkg/http/assets/js/
+./go-cloud
+*.db
+tmp/
