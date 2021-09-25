@@ -1,10 +1,12 @@
 package main
 
 import (
+	"flag"
+
 	"github.com/schoentoon/go-cloud/pkg/auth"
 	gchttp "github.com/schoentoon/go-cloud/pkg/http"
 	"github.com/schoentoon/go-cloud/pkg/models"
-	"github.com/schoentoon/go-cloud/pkg/storage/local"
+	"github.com/schoentoon/go-cloud/pkg/plugin"
 
 	log "github.com/sirupsen/logrus"
 	"gorm.io/driver/sqlite"
@@ -12,9 +14,17 @@ import (
 )
 
 func main() {
+	var cfgfile = flag.String("config", "config.yml", "Config file location")
+	flag.Parse()
+
 	log.SetLevel(log.DebugLevel)
 
-	db, err := gorm.Open(sqlite.Open("test.db"), &gorm.Config{})
+	config, err := ReadConfig(*cfgfile)
+	if err != nil {
+		panic(err)
+	}
+
+	db, err := gorm.Open(sqlite.Open(config.DB), &gorm.Config{})
 	if err != nil {
 		panic("failed to connect database")
 	}
@@ -26,7 +36,13 @@ func main() {
 
 	auth := auth.NewProvider(db)
 
-	storage := &local.StorageProvider{RootPath: "./tmp"}
+	pluginManager := plugin.NewManager()
+	defer pluginManager.Close()
+
+	storage, err := config.Storage.CreateProvider(pluginManager)
+	if err != nil {
+		panic(err)
+	}
 
 	server, err := gchttp.InitHttpServer(db, auth, storage)
 	if err != nil {

@@ -18,7 +18,7 @@ func newListHandler(store storage.StorageProvider, authProvider *auth.Provider) 
 }
 
 func (h *listHandler) Serve(user *models.User, w http.ResponseWriter, r *http.Request) {
-	files, err := h.Storage.ListDirectory(user, "/")
+	files, err := h.Storage.ListDirectory(r.Context(), user, "/")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

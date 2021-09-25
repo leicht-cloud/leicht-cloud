@@ -1,0 +1,5 @@
+db: test.db
+storage:
+  provider: plugin:local-storage
+  extra:
+    path: ./tmp

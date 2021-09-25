@@ -32,7 +32,7 @@ func (h *uploadHandler) Serve(user *models.User, w http.ResponseWriter, r *http.
 		return
 	}
 
-	f, err := h.Storage.File(user, path.Join("/", header.Filename))
+	f, err := h.Storage.File(r.Context(), user, path.Join("/", header.Filename))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

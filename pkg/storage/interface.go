@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"io"
 	"time"
 
@@ -27,9 +28,9 @@ type File interface {
 }
 
 type StorageProvider interface {
-	InitUser(user *models.User) error
-	Mkdir(user *models.User, path string) error
-	Move(user *models.User, src, dst string) error
-	ListDirectory(user *models.User, path string) (*DirectoryInfo, error)
-	File(user *models.User, fullpath string) (File, error)
+	InitUser(ctx context.Context, user *models.User) error
+	Mkdir(ctx context.Context, user *models.User, path string) error
+	Move(ctx context.Context, user *models.User, src, dst string) error
+	ListDirectory(ctx context.Context, user *models.User, path string) (*DirectoryInfo, error)
+	File(ctx context.Context, user *models.User, fullpath string) (File, error)
 }
