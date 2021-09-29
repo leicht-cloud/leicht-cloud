@@ -1,8 +1,12 @@
 package plugin
 
+// This is the client used internally to connect with plugins that make use of the BridgeStorageProviderServer
+// which is located in bridge.go
+
 import (
 	context "context"
 	"errors"
+	"sync"
 	"time"
 
 	"github.com/schoentoon/go-cloud/pkg/models"
@@ -15,6 +19,7 @@ type GrpcStorage struct {
 	Conn   *grpc.ClientConn
 	Client StorageProviderClient
 
+	mutex     sync.RWMutex
 	openFiles map[uint64]*File
 }
 
@@ -41,6 +46,8 @@ func NewGrpcStorage(addr string) (*GrpcStorage, error) {
 }
 
 func (s *GrpcStorage) Close() error {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
 	for _, f := range s.openFiles {
 		f.Close()
 	}
@@ -131,6 +138,8 @@ func (s *GrpcStorage) File(ctx context.Context, user *models.User, fullpath stri
 		Id:      reply.Id,
 	}
 
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
 	s.openFiles[reply.Id] = file
 
 	return file, nil
@@ -149,5 +158,7 @@ func (s *GrpcStorage) Delete(ctx context.Context, user *models.User, fullpath st
 }
 
 func (s *GrpcStorage) closeFile(id uint64) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
 	delete(s.openFiles, id)
 }

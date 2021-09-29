@@ -1,5 +1,9 @@
 package plugin
 
+// This file contains the implementation of the grpc to storageprovider interface bridge
+// your plugin is really just a grpc server, that the go-cloud server will communicate with
+// This struct here just make it very easy for you to set up the grpc server with a storageprovider interface
+
 import (
 	"context"
 	"errors"
