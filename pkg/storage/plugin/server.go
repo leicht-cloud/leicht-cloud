@@ -1,4 +1,4 @@
-//go:generate protoc -I . ./internal/service.proto --go_out=plugins=grpc:.
+//go:generate protoc -I . ./service.proto --go_out=plugins=grpc:.
 
 package plugin
 
