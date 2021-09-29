@@ -33,4 +33,5 @@ type StorageProvider interface {
 	Move(ctx context.Context, user *models.User, src, dst string) error
 	ListDirectory(ctx context.Context, user *models.User, path string) (*DirectoryInfo, error)
 	File(ctx context.Context, user *models.User, fullpath string) (File, error)
+	Delete(ctx context.Context, user *models.User, fullpath string) error
 }

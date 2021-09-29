@@ -19,6 +19,8 @@ service StorageProvider {
   rpc WriteFile(stream WriteFileQuery) returns (Error) {}
 
   rpc ReadFile(ReadFileQuery) returns (stream ReadFileReply) {}
+
+  rpc Delete(DeleteQuery) returns (Error) {}
 }
 
 // This basically maps to the FileInfo struct
@@ -89,4 +91,9 @@ message ReadFileQuery {
 message ReadFileReply {
     bytes data = 1;
     Error error = 2;
+};
+
+message DeleteQuery {
+    User user = 1;
+    string fullPath = 2;
 };

@@ -102,3 +102,11 @@ func (s *BridgeStorageProviderServer) WriteFile(srv StorageProvider_WriteFileSer
 func (s *BridgeStorageProviderServer) ReadFile(req *ReadFileQuery, srv StorageProvider_ReadFileServer) error {
 	return errors.New("method ReadFile not implemented")
 }
+
+func (s *BridgeStorageProviderServer) Delete(ctx context.Context, req *DeleteQuery) (*Error, error) {
+	user := toUser(req.GetUser())
+	if user == nil {
+		return nil, ErrNoUser
+	}
+	return toError(s.Storage.Delete(ctx, user, req.GetFullPath())), nil
+}

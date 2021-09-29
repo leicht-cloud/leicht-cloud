@@ -13,20 +13,24 @@ type StorageProvider struct {
 	RootPath string
 }
 
+func (s *StorageProvider) joinPath(user *models.User, dir string) string {
+	return path.Join(s.RootPath, user.Email, dir)
+}
+
 func (s *StorageProvider) InitUser(ctx context.Context, user *models.User) error {
 	return os.MkdirAll(path.Join(s.RootPath, user.Email), 0700)
 }
 
 func (s *StorageProvider) Mkdir(ctx context.Context, user *models.User, dir string) error {
-	return os.MkdirAll(path.Join(s.RootPath, user.Email, dir), 0700)
+	return os.MkdirAll(s.joinPath(user, dir), 0700)
 }
 
 func (s *StorageProvider) Move(ctx context.Context, user *models.User, src, dst string) error {
-	return os.Rename(path.Join(s.RootPath, user.Email, src), path.Join(s.RootPath, user.Email, dst))
+	return os.Rename(s.joinPath(user, src), s.joinPath(user, dst))
 }
 
 func (s *StorageProvider) ListDirectory(ctx context.Context, user *models.User, dir string) (*storage.DirectoryInfo, error) {
-	direntires, err := os.ReadDir(path.Join(s.RootPath, user.Email, dir))
+	direntires, err := os.ReadDir(s.joinPath(user, dir))
 	if err != nil {
 		return nil, err
 	}
@@ -56,6 +60,10 @@ func (s *StorageProvider) ListDirectory(ctx context.Context, user *models.User, 
 
 func (s *StorageProvider) File(ctx context.Context, user *models.User, fullpath string) (storage.File, error) {
 	return &File{
-		FullPath: path.Join(s.RootPath, user.Email, fullpath),
+		FullPath: s.joinPath(user, fullpath),
 	}, nil
+}
+
+func (s *StorageProvider) Delete(ctx context.Context, user *models.User, fullpath string) error {
+	return os.Remove(s.joinPath(user, fullpath))
 }

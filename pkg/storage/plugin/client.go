@@ -136,6 +136,18 @@ func (s *GrpcStorage) File(ctx context.Context, user *models.User, fullpath stri
 	return file, nil
 }
 
+func (s *GrpcStorage) Delete(ctx context.Context, user *models.User, fullpath string) error {
+	err, Err := s.Client.Delete(ctx,
+		&DeleteQuery{
+			User: &User{
+				Id: user.ID,
+			},
+			FullPath: fullpath,
+		},
+	)
+	return toError2(err, Err)
+}
+
 func (s *GrpcStorage) closeFile(id uint64) {
 	delete(s.openFiles, id)
 }
