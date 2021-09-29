@@ -1,5 +1,5 @@
 db: test.db
 storage:
-  provider: local
+  provider: plugin:local-storage
   extra:
     path: ./tmp

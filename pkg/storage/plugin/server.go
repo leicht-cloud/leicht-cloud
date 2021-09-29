@@ -24,6 +24,6 @@ func Start(storage storage.StorageProvider) error {
 	server := grpc.NewServer(
 		grpc.MaxRecvMsgSize(1024 * 1024 * 32),
 	)
-	RegisterStorageProviderServer(server, &BridgeStorageProviderServer{Storage: storage})
+	RegisterStorageProviderServer(server, NewStorageBridge(storage))
 	return server.Serve(lis)
 }

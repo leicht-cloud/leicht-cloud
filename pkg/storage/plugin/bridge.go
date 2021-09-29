@@ -3,6 +3,9 @@ package plugin
 import (
 	"context"
 	"errors"
+	"fmt"
+	"io"
+	"sync"
 
 	"github.com/schoentoon/go-cloud/pkg/models"
 	"github.com/schoentoon/go-cloud/pkg/storage"
@@ -10,6 +13,19 @@ import (
 
 type BridgeStorageProviderServer struct {
 	Storage storage.StorageProvider
+
+	mutex sync.RWMutex
+	// the value of this map is always going to be storage.File,
+	// but for some reason golang doesn't allow you to use this as a value?
+	openFiles map[int]interface{}
+	nextID    int
+}
+
+func NewStorageBridge(storage storage.StorageProvider) *BridgeStorageProviderServer {
+	return &BridgeStorageProviderServer{
+		Storage:   storage,
+		openFiles: make(map[int]interface{}),
+	}
 }
 
 func toError(err error) *Error {
@@ -88,19 +104,113 @@ func (s *BridgeStorageProviderServer) ListDirectory(ctx context.Context, req *Li
 }
 
 func (s *BridgeStorageProviderServer) OpenFile(ctx context.Context, req *OpenFileQuery) (*OpenFileReply, error) {
-	return nil, errors.New("method OpenFile not implemented")
+	user := toUser(req.GetUser())
+	if user == nil {
+		return nil, ErrNoUser
+	}
+
+	file, err := s.Storage.File(ctx, user, req.GetFullPath())
+	if err != nil {
+		return &OpenFileReply{
+			Error: toError(err),
+		}, nil
+	}
+
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	fileId := s.nextID
+	s.openFiles[fileId] = file
+	s.nextID++
+
+	return &OpenFileReply{
+		Id: uint64(fileId),
+	}, nil
+}
+
+func (s *BridgeStorageProviderServer) getFile(id int) (storage.File, error) {
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+
+	file, ok := s.openFiles[id]
+	if !ok {
+		return nil, fmt.Errorf("No file with id: %d", id)
+	}
+
+	return file.(storage.File), nil
 }
 
 func (s *BridgeStorageProviderServer) CloseFile(ctx context.Context, req *CloseFileQuery) (*Error, error) {
-	return nil, errors.New("method CloseFile not implemented")
+	file, err := s.getFile(int(req.GetId()))
+	if err != nil {
+		return nil, err
+	}
+
+	// close the actual underlying file
+	err = file.Close()
+	if err != nil {
+		return toError(err), nil
+	}
+
+	// and remove file from our open files map
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	delete(s.openFiles, int(req.GetId()))
+
+	return nil, nil
 }
 
 func (s *BridgeStorageProviderServer) WriteFile(srv StorageProvider_WriteFileServer) error {
-	return errors.New("method WriteFile not implemented")
+	for {
+		req, err := srv.Recv()
+		if err != nil {
+			if err == io.EOF {
+				return nil
+			}
+			return err
+		}
+
+		file, err := s.getFile(int(req.GetId()))
+		if err != nil {
+			return err
+		}
+
+		_, err = file.Write(req.GetData())
+		if err != nil {
+			return err
+		}
+	}
 }
 
+const READ_BUFFER_SIZE = 1024 * 4
+
 func (s *BridgeStorageProviderServer) ReadFile(req *ReadFileQuery, srv StorageProvider_ReadFileServer) error {
-	return errors.New("method ReadFile not implemented")
+	file, err := s.getFile(int(req.GetId()))
+	if err != nil {
+		return err
+	}
+
+	buffer := make([]byte, READ_BUFFER_SIZE)
+
+	for {
+		n, err := file.Read(buffer)
+		if err != nil {
+			if err == io.EOF {
+				// empty message indicate end of file
+				// TODO: figure out if we can also just return from here instead
+				return srv.Send(&ReadFileReply{})
+			}
+			return srv.Send(&ReadFileReply{
+				Error: toError(err),
+			})
+		}
+
+		err = srv.Send(&ReadFileReply{
+			Data: buffer[:n],
+		})
+		if err != nil {
+			return err
+		}
+	}
 }
 
 func (s *BridgeStorageProviderServer) Delete(ctx context.Context, req *DeleteQuery) (*Error, error) {
