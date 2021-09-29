@@ -2,10 +2,9 @@ package models
 
 import "time"
 
-// TODO: make the ID the actual primary key
 type User struct {
-	ID           uint64
-	Email        string `gorm:"primaryKey"`
+	ID           uint64 `gorm:"primaryKey;autoIncrement"`
+	Email        string `gorm:"index:idx_email,unique"`
 	PasswordHash []byte
-	CreatedAt    time.Time
+	CreatedAt    time.Time `gorm:"autoCreateTime"`
 }

@@ -2,6 +2,7 @@ package local
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path"
 
@@ -14,11 +15,11 @@ type StorageProvider struct {
 }
 
 func (s *StorageProvider) joinPath(user *models.User, dir string) string {
-	return path.Join(s.RootPath, user.Email, dir)
+	return path.Join(s.RootPath, fmt.Sprintf("%d", user.ID), dir)
 }
 
 func (s *StorageProvider) InitUser(ctx context.Context, user *models.User) error {
-	return os.MkdirAll(path.Join(s.RootPath, user.Email), 0700)
+	return os.MkdirAll(path.Join(s.RootPath, fmt.Sprintf("%d", user.ID)), 0700)
 }
 
 func (s *StorageProvider) Mkdir(ctx context.Context, user *models.User, dir string) error {

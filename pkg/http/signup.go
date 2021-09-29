@@ -51,7 +51,7 @@ func (h *signupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, result.Error.Error(), http.StatusInternalServerError)
 		return
 	} else {
-		h.Storage.InitUser(r.Context(), &user) // TODO implement actual error checking on this, ideally with a complete way of rolling back the previous progress
+		h.Storage.InitUser(r.Context(), &user) // TODO: implement actual error checking on this, ideally with a complete way of rolling back the previous progress
 		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 	}
 }
