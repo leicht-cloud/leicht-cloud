@@ -12,6 +12,7 @@ import (
 	"github.com/schoentoon/go-cloud/pkg/models"
 	"github.com/schoentoon/go-cloud/pkg/storage"
 	grpc "google.golang.org/grpc"
+	"gopkg.in/yaml.v2"
 )
 
 type GrpcStorage struct {
@@ -32,12 +33,18 @@ func toError2(err *Error, Err error) error {
 	return nil
 }
 
-func NewGrpcStorage(conn *grpc.ClientConn) (*GrpcStorage, error) {
-	return &GrpcStorage{
+func NewGrpcStorage(conn *grpc.ClientConn, config map[interface{}]interface{}) (*GrpcStorage, error) {
+	out := &GrpcStorage{
 		Conn:      conn,
 		Client:    NewStorageProviderClient(conn),
 		openFiles: make(map[uint64]*File),
-	}, nil
+	}
+
+	err := out.configure(config)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (s *GrpcStorage) Close() error {
@@ -47,6 +54,19 @@ func (s *GrpcStorage) Close() error {
 		f.Close()
 	}
 	return nil
+}
+
+func (s *GrpcStorage) configure(in map[interface{}]interface{}) error {
+	data, err := yaml.Marshal(in)
+	if err != nil {
+		return err
+	}
+
+	Err, err := s.Client.Configure(context.Background(), &ConfigData{
+		Yaml: data,
+	})
+
+	return toError2(Err, err)
 }
 
 func (s *GrpcStorage) InitUser(ctx context.Context, user *models.User) error {

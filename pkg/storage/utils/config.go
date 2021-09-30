@@ -35,7 +35,7 @@ func fromConfig(cfg *Config, pManager *plugin.Manager) (storage.StorageProvider,
 			return nil, err
 		}
 
-		return storagePlugin.NewGrpcStorage(conn)
+		return storagePlugin.NewGrpcStorage(conn, cfg.Extra)
 	}
 
 	return nil, fmt.Errorf("No storage provider found with the name: %s", cfg.Provider)

@@ -4,6 +4,8 @@ package plugin;
 
 // Interface exported by the server.
 service StorageProvider {
+  rpc Configure(ConfigData) returns (Error) {}
+
   rpc InitUser(User) returns (Error) {}
   
   rpc MkDir(MkdirQuery) returns (Error) {}
@@ -22,6 +24,10 @@ service StorageProvider {
 
   rpc Delete(DeleteQuery) returns (Error) {}
 }
+
+message ConfigData {
+    bytes yaml = 1;
+};
 
 // This basically maps to the FileInfo struct
 message FileInfo {

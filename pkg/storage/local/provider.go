@@ -11,7 +11,7 @@ import (
 )
 
 type StorageProvider struct {
-	RootPath string
+	RootPath string `yaml:"path"`
 }
 
 func (s *StorageProvider) joinPath(user *models.User, dir string) string {

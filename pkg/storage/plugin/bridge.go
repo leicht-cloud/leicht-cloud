@@ -12,6 +12,7 @@ import (
 
 	"github.com/schoentoon/go-cloud/pkg/models"
 	"github.com/schoentoon/go-cloud/pkg/storage"
+	"gopkg.in/yaml.v3"
 )
 
 type BridgeStorageProviderServer struct {
@@ -50,6 +51,11 @@ func toUser(req *User) *models.User {
 }
 
 var ErrNoUser = &Error{Message: "No user specified"}
+
+func (s *BridgeStorageProviderServer) Configure(ctx context.Context, req *ConfigData) (*Error, error) {
+	err := yaml.Unmarshal(req.GetYaml(), s.Storage)
+	return toError(err), nil
+}
 
 func (s *BridgeStorageProviderServer) InitUser(ctx context.Context, req *User) (*Error, error) {
 	user := toUser(req)

@@ -40,7 +40,12 @@ func testPlugin(t *testing.T, pManager *plugin.Manager, name string) {
 		return
 	}
 
-	provider, err := storagePlugin.NewGrpcStorage(conn)
+	// TODO: Read from a file in the plugin directory
+	cfg := map[interface{}]interface{}{
+		"path": t.TempDir(),
+	}
+
+	provider, err := storagePlugin.NewGrpcStorage(conn, cfg)
 	assert.NoError(t, err)
 
 	storage.TestStorageProvider(provider, t)
