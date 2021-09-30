@@ -33,6 +33,7 @@ func TestStorageProvider(provider StorageProvider, t *testing.T) {
 	t.Run("InitUser", func(t *testing.T) { testInitUser(t, user, provider) })
 	t.Run("Mkdir", func(t *testing.T) { testMkdir(t, user, provider) })
 	t.Run("ListDirectory", func(t *testing.T) { testListDirectory(t, user, provider) })
+	t.Run("Move", func(t *testing.T) { testMove(t, user, provider) })
 	if t.Run("File/1KB", func(t *testing.T) { testFile(t, user, provider, 1024) }) {
 		// we only continue with the large file tests if the first one actually passed.
 		t.Run("File/4KB", func(t *testing.T) { testFile(t, user, provider, 1024*4) })
@@ -58,6 +59,16 @@ func testListDirectory(t *testing.T, user *models.User, storage StorageProvider)
 
 	assert.Len(t, dir.Files, 1)
 	assert.Equal(t, "dir", dir.Files[0].Name)
+}
+
+func testMove(t *testing.T, user *models.User, storage StorageProvider) {
+	assert.NoError(t, storage.Move(context.Background(), user, "random", "notrandom"))
+
+	dir, err := storage.ListDirectory(context.Background(), user, ".")
+	assert.NoError(t, err)
+
+	assert.Len(t, dir.Files, 1)
+	assert.Equal(t, "notrandom", dir.Files[0].Name)
 }
 
 func testFile(t *testing.T, user *models.User, storage StorageProvider, size int) {
@@ -114,6 +125,8 @@ func testFile(t *testing.T, user *models.User, storage StorageProvider, size int
 		if assert.NoError(t, err) {
 			assert.Equal(t, buffer, data)
 		}
+
+		assert.NoError(t, file.Close())
 	}) {
 		return
 	}
@@ -135,10 +148,10 @@ func testFile(t *testing.T, user *models.User, storage StorageProvider, size int
 }
 
 func testDelete(t *testing.T, user *models.User, storage StorageProvider) {
-	err := storage.Delete(context.Background(), user, "random/dir")
+	err := storage.Delete(context.Background(), user, "notrandom/dir")
 	assert.NoError(t, err)
 
-	dir, err := storage.ListDirectory(context.Background(), user, "random")
+	dir, err := storage.ListDirectory(context.Background(), user, "notrandom")
 	assert.NoError(t, err)
 
 	assert.Len(t, dir.Files, 0)
