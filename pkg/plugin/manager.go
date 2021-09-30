@@ -2,18 +2,27 @@ package plugin
 
 import (
 	"fmt"
+	"math/rand"
 	"os"
 	"os/exec"
+	"time"
 
 	log "github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
 )
 
+func init() {
+	rand.Seed(time.Now().Unix())
+}
+
 type Manager struct {
+	Path    string
 	plugins []*exec.Cmd
 }
 
-func NewManager() *Manager {
+func NewManager(pluginPath string) *Manager {
 	return &Manager{
+		Path:    pluginPath,
 		plugins: make([]*exec.Cmd, 0),
 	}
 }
@@ -30,25 +39,29 @@ func (m *Manager) Close() error {
 	return nil
 }
 
-func (m *Manager) Start(name string, port int32) error {
+func (m *Manager) Start(name string) (*grpc.ClientConn, error) {
 	// TODO: We should improve where and how it searches for plugins
 	// alongside we'll want to implement some form of manifest and
 	// namespace the running plugin process
-	path := fmt.Sprintf("./plugins/%s/%s", name, name)
+	path := fmt.Sprintf("%s/%s/%s", m.Path, name, name)
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return fmt.Errorf("plugin '%s' not found at: %s", name, path)
+		return nil, fmt.Errorf("plugin '%s' not found at: %s", name, path)
 	}
 
+	// TODO: We'll probably want to do this inter procress communication
+	// over unix sockets on supported platforms
+	port := 60000 + (rand.Int31() % 5000)
 	cmd := exec.Cmd{
-		Path:   path,
-		Stdin:  os.Stdin,
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
-		Env:    []string{fmt.Sprintf("PORT=%d", port)},
+		Path: path,
+		Env:  []string{fmt.Sprintf("PORT=%d", port)},
 	}
 	err := cmd.Start()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+
+	return grpc.Dial(fmt.Sprintf("127.0.0.1:%d", port),
+		grpc.WithInsecure(),
+		grpc.WithBlock(),
+	)
 }

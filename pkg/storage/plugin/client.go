@@ -12,7 +12,6 @@ import (
 	"github.com/schoentoon/go-cloud/pkg/models"
 	"github.com/schoentoon/go-cloud/pkg/storage"
 	grpc "google.golang.org/grpc"
-	"google.golang.org/grpc/encoding/gzip"
 )
 
 type GrpcStorage struct {
@@ -27,17 +26,13 @@ func toError2(err *Error, Err error) error {
 	if Err != nil {
 		return Err
 	}
-	if err != nil || err.GetMessage() != "" {
+	if err != nil && err.GetMessage() != "" {
 		return errors.New(err.GetMessage())
 	}
 	return nil
 }
 
-func NewGrpcStorage(addr string) (*GrpcStorage, error) {
-	conn, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithDefaultCallOptions(grpc.UseCompressor(gzip.Name)))
-	if err != nil {
-		return nil, err
-	}
+func NewGrpcStorage(conn *grpc.ClientConn) (*GrpcStorage, error) {
 	return &GrpcStorage{
 		Conn:      conn,
 		Client:    NewStorageProviderClient(conn),

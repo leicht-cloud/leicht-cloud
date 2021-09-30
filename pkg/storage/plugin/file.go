@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"io"
 )
 
 type File struct {
@@ -36,11 +37,17 @@ func (f *File) Read(p []byte) (int, error) {
 	for f.buffer.Len() < len(p) {
 		reply, err := f.reader.Recv()
 		if err != nil {
-			return -1, err
+			if err == io.EOF {
+				return 0, io.EOF
+			}
+			return 0, err
+		}
+		if reply.GetError() != nil && reply.GetError().GetMessage() != "" {
+			return 0, errors.New(reply.GetError().GetMessage())
 		}
 		_, err = f.buffer.Write(reply.Data)
 		if err != nil {
-			return -1, err
+			return 0, err
 		}
 	}
 

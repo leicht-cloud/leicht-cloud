@@ -36,7 +36,7 @@ func main() {
 
 	auth := auth.NewProvider(db)
 
-	pluginManager := plugin.NewManager()
+	pluginManager := plugin.NewManager("./plugins")
 	defer pluginManager.Close()
 
 	storage, err := config.Storage.CreateProvider(pluginManager)

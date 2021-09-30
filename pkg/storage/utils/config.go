@@ -3,7 +3,6 @@ package utils
 import (
 	"errors"
 	"fmt"
-	"math/rand"
 	"strings"
 
 	"github.com/schoentoon/go-cloud/pkg/plugin"
@@ -31,15 +30,12 @@ func fromConfig(cfg *Config, pManager *plugin.Manager) (storage.StorageProvider,
 	} else if strings.HasPrefix(cfg.Provider, "plugin:") {
 		name := strings.TrimPrefix(cfg.Provider, "plugin:")
 
-		// TODO: we'll want to communicate over a unix socket eventually
-		// for now we just assign it to a random port.
-		port := 60000 + (rand.Int31() % 5000)
-		err := pManager.Start(name, port)
+		conn, err := pManager.Start(name)
 		if err != nil {
 			return nil, err
 		}
 
-		return storagePlugin.NewGrpcStorage(fmt.Sprintf("127.0.0.1:%d", port))
+		return storagePlugin.NewGrpcStorage(conn)
 	}
 
 	return nil, fmt.Errorf("No storage provider found with the name: %s", cfg.Provider)

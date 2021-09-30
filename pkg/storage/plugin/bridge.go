@@ -6,7 +6,6 @@ package plugin
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"sync"
@@ -38,7 +37,7 @@ func toError(err error) *Error {
 			Message: err.Error(),
 		}
 	}
-	return nil
+	return &Error{}
 }
 
 func toUser(req *User) *models.User {
@@ -50,33 +49,38 @@ func toUser(req *User) *models.User {
 	}
 }
 
-var ErrNoUser = errors.New("No user specified")
+var ErrNoUser = &Error{Message: "No user specified"}
 
 func (s *BridgeStorageProviderServer) InitUser(ctx context.Context, req *User) (*Error, error) {
 	user := toUser(req)
 	if user == nil {
-		return nil, ErrNoUser
+		return ErrNoUser, nil
 	}
 	return toError(s.Storage.InitUser(ctx, user)), nil
 }
+
 func (s *BridgeStorageProviderServer) MkDir(ctx context.Context, req *MkdirQuery) (*Error, error) {
 	user := toUser(req.GetUser())
 	if user == nil {
-		return nil, ErrNoUser
+		return ErrNoUser, nil
 	}
 	return toError(s.Storage.Mkdir(ctx, user, req.GetPath())), nil
 }
+
 func (s *BridgeStorageProviderServer) Move(ctx context.Context, req *MoveQuery) (*Error, error) {
 	user := toUser(req.GetUser())
 	if user == nil {
-		return nil, ErrNoUser
+		return ErrNoUser, nil
 	}
 	return toError(s.Storage.Move(ctx, user, req.GetSrc(), req.GetDst())), nil
 }
+
 func (s *BridgeStorageProviderServer) ListDirectory(ctx context.Context, req *ListDirectoryQuery) (*ListDirectoryInfoReply, error) {
 	user := toUser(req.GetUser())
 	if user == nil {
-		return nil, ErrNoUser
+		return &ListDirectoryInfoReply{
+			Error: ErrNoUser,
+		}, nil
 	}
 
 	files, err := s.Storage.ListDirectory(ctx, user, req.GetPath())
@@ -110,7 +114,9 @@ func (s *BridgeStorageProviderServer) ListDirectory(ctx context.Context, req *Li
 func (s *BridgeStorageProviderServer) OpenFile(ctx context.Context, req *OpenFileQuery) (*OpenFileReply, error) {
 	user := toUser(req.GetUser())
 	if user == nil {
-		return nil, ErrNoUser
+		return &OpenFileReply{
+			Error: ErrNoUser,
+		}, nil
 	}
 
 	file, err := s.Storage.File(ctx, user, req.GetFullPath())
@@ -220,7 +226,7 @@ func (s *BridgeStorageProviderServer) ReadFile(req *ReadFileQuery, srv StoragePr
 func (s *BridgeStorageProviderServer) Delete(ctx context.Context, req *DeleteQuery) (*Error, error) {
 	user := toUser(req.GetUser())
 	if user == nil {
-		return nil, ErrNoUser
+		return ErrNoUser, nil
 	}
 	return toError(s.Storage.Delete(ctx, user, req.GetFullPath())), nil
 }
