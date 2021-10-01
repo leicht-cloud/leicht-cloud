@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/schoentoon/go-cloud/pkg/auth"
 	"github.com/schoentoon/go-cloud/pkg/models"
 	"github.com/schoentoon/go-cloud/pkg/storage"
@@ -24,6 +26,8 @@ func (h *listHandler) Serve(user *models.User, w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	// TODO error checking
-	json.NewEncoder(w).Encode(files)
+	err = json.NewEncoder(w).Encode(files)
+	if err != nil {
+		logrus.Errorf("Error %s while encoding json", err)
+	}
 }

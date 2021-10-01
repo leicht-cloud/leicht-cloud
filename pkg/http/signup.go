@@ -6,6 +6,7 @@ import (
 
 	"github.com/schoentoon/go-cloud/pkg/models"
 	"github.com/schoentoon/go-cloud/pkg/storage"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -45,13 +46,26 @@ func (h *signupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		PasswordHash: hash,
 	}
 
-	result := h.DB.Create(&user)
+	// We create the user inside a transaction, so in case we fail to initialize something else
+	// related to the new user we can easily undo the database part
+	err = h.DB.Transaction(func(tx *gorm.DB) error {
+		result := h.DB.Create(&user)
 
-	if result.Error != nil {
-		http.Error(w, result.Error.Error(), http.StatusInternalServerError)
-		return
-	} else {
-		h.Storage.InitUser(r.Context(), &user) // TODO: implement actual error checking on this, ideally with a complete way of rolling back the previous progress
-		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+		if result.Error != nil {
+			http.Error(w, result.Error.Error(), http.StatusInternalServerError)
+			return result.Error
+		} else {
+			err = h.Storage.InitUser(r.Context(), &user)
+			if err != nil {
+				logrus.Errorf("Failed to initialize storage for new user, incorrect settings?: %s", err)
+				return err
+			}
+			http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+		}
+
+		return nil
+	})
+	if err != nil {
+		logrus.Error(err)
 	}
 }

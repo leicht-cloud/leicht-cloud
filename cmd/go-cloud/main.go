@@ -8,7 +8,7 @@ import (
 	"github.com/schoentoon/go-cloud/pkg/models"
 	"github.com/schoentoon/go-cloud/pkg/plugin"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -17,7 +17,7 @@ func main() {
 	var cfgfile = flag.String("config", "config.yml", "Config file location")
 	flag.Parse()
 
-	log.SetLevel(log.DebugLevel)
+	logrus.SetLevel(logrus.DebugLevel)
 
 	config, err := ReadConfig(*cfgfile)
 	if err != nil {
@@ -48,5 +48,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	server.ListenAndServe()
+	err = server.ListenAndServe()
+	if err != nil {
+		panic(err)
+	}
 }
