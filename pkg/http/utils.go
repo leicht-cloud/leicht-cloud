@@ -3,8 +3,9 @@ package http
 import (
 	"io"
 	"io/fs"
-	"log"
 	"net/http"
+
+	"github.com/sirupsen/logrus"
 )
 
 func sendAsset(assets fs.FS, filename string, w http.ResponseWriter, r *http.Request) {
@@ -18,6 +19,6 @@ func sendAsset(assets fs.FS, filename string, w http.ResponseWriter, r *http.Req
 
 	_, err = io.Copy(w, asset)
 	if err != nil {
-		log.Println(err)
+		logrus.Error(err)
 	}
 }

@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"time"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 )
 
@@ -31,10 +31,17 @@ func (m *Manager) Close() error {
 	for _, plugin := range m.plugins {
 		err := plugin.Process.Signal(os.Interrupt)
 		if err != nil {
-			log.Errorf("Got %s, so killing it instead.", err)
-			plugin.Process.Kill()
+			logrus.Errorf("Got %s, so killing it instead.", err)
+			err = plugin.Process.Kill()
+			if err != nil {
+				logrus.Errorf("Error %s while killing process? wtf", err)
+			}
 		}
-		plugin.Wait()
+		// TODO: We should only wait for a certain time, don't give plugins infinite time to end cleanly
+		err = plugin.Wait()
+		if err != nil {
+			logrus.Errorf("Error %s while waiting for %s to end", err, plugin)
+		}
 	}
 	return nil
 }

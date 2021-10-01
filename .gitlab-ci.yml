@@ -1,0 +1,45 @@
+stages:
+  - lint
+  - build
+
+test:
+  stage: lint
+  image: golang:latest
+  before_script:
+    - apt-get update && apt-get install -y protobuf-compiler
+    - go mod download
+    - go install github.com/golang/protobuf/proto
+    - go install github.com/golang/protobuf/protoc-gen-go
+    - go generate ./...
+  script:
+    - find plugins -type d -mindepth 1 -maxdepth 1 -exec go build -o ./{} ./{}/... \;
+    - go test -v -cover ./...
+
+golangci-linter:
+  stage: lint
+  image:
+    name: golangci/golangci-lint:latest
+    entrypoint: [""]
+  before_script:
+    - apt-get update && apt-get install -y protobuf-compiler
+    - go mod download
+    - go install github.com/golang/protobuf/proto
+    - go install github.com/golang/protobuf/protoc-gen-go
+    - go generate ./...
+  script:
+    - golangci-lint run --timeout 1h ./...
+
+build:
+  stage: build
+  image: golang:latest
+  before_script:
+    - apt-get update && apt-get install -y protobuf-compiler
+    - go mod download
+    - go install github.com/golang/protobuf/proto
+    - go install github.com/golang/protobuf/protoc-gen-go
+    - go generate ./...
+  script:
+    - find cmd -type d -mindepth 1 -maxdepth 1 -exec go build ./{}/... \;
+    - find plugins -type d -mindepth 1 -maxdepth 1 -exec go build ./{}/... \;
+  artifacts:
+    untracked: true

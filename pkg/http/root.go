@@ -5,7 +5,6 @@ import (
 
 	"github.com/schoentoon/go-cloud/pkg/auth"
 
-	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
@@ -21,7 +20,7 @@ func (h *rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.Auth.VerifyFromRequest(r)
+	_, err := h.Auth.VerifyFromRequest(r)
 	if err != nil {
 		// internal we redirect you to signin.html
 		r.URL.Path = "/signin.html"
@@ -29,7 +28,6 @@ func (h *rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Debug("Welcome ", user)
 	// internal rewrite to the root folder
 	r.URL.Path = "/folder.html"
 	h.StaticHandler.ServeHTTP(w, r)
