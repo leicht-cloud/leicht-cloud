@@ -1,9 +1,4 @@
-stages:
-  - lint
-  - build
-
 test:
-  stage: lint
   image: golang:latest
   before_script:
     - apt-get update && apt-get install -y protobuf-compiler
@@ -17,7 +12,6 @@ test:
     - go test -v -cover ./...
 
 golangci-linter:
-  stage: lint
   image:
     name: golangci/golangci-lint:latest
     entrypoint: [""]
@@ -33,7 +27,6 @@ golangci-linter:
     - golangci-lint run --timeout 1h ./...
 
 build:
-  stage: build
   image: golang:latest
   before_script:
     - apt-get update && apt-get install -y protobuf-compiler
