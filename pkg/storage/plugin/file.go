@@ -5,20 +5,27 @@ import (
 	"context"
 	"errors"
 	"io"
+
+	"github.com/sirupsen/logrus"
 )
 
 type File struct {
 	Storage *GrpcStorage
-	Id      uint64
+	Id      int32
 
-	buffer bytes.Buffer
-	reader StorageProvider_ReadFileClient
-	writer StorageProvider_WriteFileClient
+	readbuf bytes.Buffer
+	reader  StorageProvider_ReadFileClient
+	isEOF   bool
+	writing bool
 }
 
 func (f *File) Read(p []byte) (int, error) {
-	if f.writer != nil {
+	if f.writing == true {
 		return 0, errors.New("File is already opened in write mode")
+	}
+
+	if f.isEOF {
+		return f.readTilEOF(p)
 	}
 
 	if f.reader == nil {
@@ -28,65 +35,73 @@ func (f *File) Read(p []byte) (int, error) {
 			},
 		)
 		if err != nil {
-			return -1, err
+			return 0, err
 		}
 		f.reader = reader
 	}
 
 	// while our buffer doesn't have enough data left we read from the stream first
-	for f.buffer.Len() < len(p) {
+	for f.readbuf.Len() < len(p) {
 		reply, err := f.reader.Recv()
 		if err != nil {
-			if err == io.EOF {
-				return 0, io.EOF
-			}
 			return 0, err
 		}
 		if reply.GetError() != nil && reply.GetError().GetMessage() != "" {
 			return 0, errors.New(reply.GetError().GetMessage())
 		}
-		_, err = f.buffer.Write(reply.Data)
+
+		_, err = f.readbuf.Write(reply.Data)
 		if err != nil {
 			return 0, err
 		}
+
+		if reply.GetEOF() {
+			f.isEOF = true
+			return f.readTilEOF(p)
+		}
 	}
 
-	return f.buffer.Read(p)
+	return f.readbuf.Read(p)
 }
 
-func (f *File) Close() error {
-	defer f.Storage.closeFile(f.Id)
+// internal use only, ASSUMES isEOF is true
+func (f *File) readTilEOF(p []byte) (int, error) {
+	if f.readbuf.Len() > 0 {
+		n, err := f.readbuf.Read(p)
+		if f.readbuf.Len() == 0 {
+			return n, io.EOF
+		}
+		return n, err
+	}
+	return 0, io.EOF
+}
+
+func (f *File) Close() (err error) {
+	logrus.Debugf("Close()")
 	if f.reader != nil {
-		return f.reader.CloseSend()
+		err = f.reader.CloseSend() // TODO: this error isn't handled correctly atm
 	}
-	if f.writer != nil {
-		return f.writer.CloseSend()
-	}
-	return nil
+	return f.Storage.closeFile(f.Id)
 }
 
 func (f *File) Write(p []byte) (int, error) {
+	logrus.Debugf("Write([]byte len(%d))", len(p))
 	if f.reader != nil {
 		return 0, errors.New("File is already opened in read mode")
 	}
 
-	if f.writer == nil {
-		writer, err := f.Storage.Client.WriteFile(context.Background())
-		if err != nil {
-			return -1, err
-		}
+	f.writing = true
 
-		f.writer = writer
+	query := &WriteFileQuery{
+		Id:   f.Id,
+		Data: p,
 	}
 
-	err := f.writer.Send(
-		&WriteFileQuery{
-			Id:   f.Id,
-			Data: p,
-		},
-	)
+	reply, err := f.Storage.Client.WriteFile(context.TODO(), query)
 	if err != nil {
-		return -1, err
+		logrus.Debugf("f.writer.Send error: %s", err)
+		return 0, err
 	}
-	return len(p), nil
+
+	return int(reply.SizeWritten), nil
 }

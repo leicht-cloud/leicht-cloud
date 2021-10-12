@@ -11,6 +11,7 @@ import (
 
 	"github.com/schoentoon/go-cloud/pkg/models"
 	"github.com/schoentoon/go-cloud/pkg/storage"
+	"github.com/sirupsen/logrus"
 	grpc "google.golang.org/grpc"
 	"gopkg.in/yaml.v2"
 )
@@ -20,7 +21,7 @@ type GrpcStorage struct {
 	Client StorageProviderClient
 
 	mutex     sync.RWMutex
-	openFiles map[uint64]*File
+	openFiles map[int32]*File
 }
 
 func toError2(err *Error, Err error) error {
@@ -37,7 +38,7 @@ func NewGrpcStorage(conn *grpc.ClientConn, config map[interface{}]interface{}) (
 	out := &GrpcStorage{
 		Conn:      conn,
 		Client:    NewStorageProviderClient(conn),
-		openFiles: make(map[uint64]*File),
+		openFiles: make(map[int32]*File),
 	}
 
 	err := out.configure(config)
@@ -136,6 +137,7 @@ func (s *GrpcStorage) ListDirectory(ctx context.Context, user *models.User, path
 }
 
 func (s *GrpcStorage) File(ctx context.Context, user *models.User, fullpath string) (storage.File, error) {
+	logrus.Debugf("File(%d, %s)", user.ID, fullpath)
 	reply, err := s.Client.OpenFile(ctx,
 		&OpenFileQuery{
 			User: &User{
@@ -145,6 +147,7 @@ func (s *GrpcStorage) File(ctx context.Context, user *models.User, fullpath stri
 		},
 	)
 	if err != nil {
+		logrus.Errorf("%s opening %s for %d", err, fullpath, user.ID)
 		return nil, err
 	}
 
@@ -153,9 +156,12 @@ func (s *GrpcStorage) File(ctx context.Context, user *models.User, fullpath stri
 		Id:      reply.Id,
 	}
 
+	logrus.Debugf("Opened %s for %d with id %d", fullpath, user.ID, reply.Id)
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	s.openFiles[reply.Id] = file
+
+	logrus.Debugf("%+v", s.openFiles)
 
 	return file, nil
 }
@@ -172,8 +178,16 @@ func (s *GrpcStorage) Delete(ctx context.Context, user *models.User, fullpath st
 	return toError2(err, Err)
 }
 
-func (s *GrpcStorage) closeFile(id uint64) {
+func (s *GrpcStorage) closeFile(id int32) error {
+	err, Err := s.Client.CloseFile(context.TODO(),
+		&CloseFileQuery{
+			Id: id,
+		},
+	)
+
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	delete(s.openFiles, id)
+
+	return toError2(err, Err)
 }

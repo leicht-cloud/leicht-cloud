@@ -12,6 +12,7 @@ import (
 
 	"github.com/schoentoon/go-cloud/pkg/models"
 	"github.com/schoentoon/go-cloud/pkg/storage"
+	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )
 
@@ -21,14 +22,14 @@ type BridgeStorageProviderServer struct {
 	mutex sync.RWMutex
 	// the value of this map is always going to be storage.File,
 	// but for some reason golang doesn't allow you to use this as a value?
-	openFiles map[int]interface{}
-	nextID    int
+	openFiles map[int32]interface{}
+	nextID    int32
 }
 
 func NewStorageBridge(storage storage.StorageProvider) *BridgeStorageProviderServer {
 	return &BridgeStorageProviderServer{
 		Storage:   storage,
-		openFiles: make(map[int]interface{}),
+		openFiles: make(map[int32]interface{}),
 	}
 }
 
@@ -54,7 +55,16 @@ var ErrNoUser = &Error{Message: "No user specified"}
 
 func (s *BridgeStorageProviderServer) Configure(ctx context.Context, req *ConfigData) (*Error, error) {
 	err := yaml.Unmarshal(req.GetYaml(), s.Storage)
-	return toError(err), nil
+	if err != nil {
+		return toError(err), nil
+	}
+
+	// if the underlying storage has the OnConfigure function we call that before returning
+	if onconfig, ok := s.Storage.(storage.PostConfigure); ok {
+		return toError(onconfig.OnConfigure()), nil
+	}
+
+	return &Error{}, nil
 }
 
 func (s *BridgeStorageProviderServer) InitUser(ctx context.Context, req *User) (*Error, error) {
@@ -109,6 +119,7 @@ func (s *BridgeStorageProviderServer) ListDirectory(ctx context.Context, req *Li
 			CreatedAt: uint64(f.CreatedAt.Unix()),
 			UpdatedAt: uint64(f.UpdatedAt.Unix()),
 			Size:      f.Size,
+			Directory: f.Directory,
 		}
 
 		out.Files = append(out.Files, file)
@@ -134,16 +145,18 @@ func (s *BridgeStorageProviderServer) OpenFile(ctx context.Context, req *OpenFil
 
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	fileId := s.nextID
-	s.openFiles[fileId] = file
 	s.nextID++
+	s.openFiles[s.nextID] = file
+
+	logrus.Debugf("%+v", s.openFiles)
 
 	return &OpenFileReply{
-		Id: uint64(fileId),
+		Id: s.nextID,
 	}, nil
 }
 
-func (s *BridgeStorageProviderServer) getFile(id int) (storage.File, error) {
+func (s *BridgeStorageProviderServer) getFile(id int32) (storage.File, error) {
+	logrus.Debugf("getFile(%d)", id)
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
 
@@ -156,9 +169,9 @@ func (s *BridgeStorageProviderServer) getFile(id int) (storage.File, error) {
 }
 
 func (s *BridgeStorageProviderServer) CloseFile(ctx context.Context, req *CloseFileQuery) (*Error, error) {
-	file, err := s.getFile(int(req.GetId()))
+	file, err := s.getFile(req.GetId())
 	if err != nil {
-		return nil, err
+		return toError(err), nil
 	}
 
 	// close the actual underlying file
@@ -170,37 +183,38 @@ func (s *BridgeStorageProviderServer) CloseFile(ctx context.Context, req *CloseF
 	// and remove file from our open files map
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	delete(s.openFiles, int(req.GetId()))
+	delete(s.openFiles, req.GetId())
 
-	return nil, nil
+	return &Error{}, nil
 }
 
-func (s *BridgeStorageProviderServer) WriteFile(srv StorageProvider_WriteFileServer) error {
-	for {
-		req, err := srv.Recv()
-		if err != nil {
-			if err == io.EOF {
-				return nil
-			}
-			return err
-		}
+func (s *BridgeStorageProviderServer) WriteFile(ctx context.Context, req *WriteFileQuery) (*WriteFileReply, error) {
+	logrus.Debugf("%+v.WriteFile(%+v)", s, req)
 
-		file, err := s.getFile(int(req.GetId()))
-		if err != nil {
-			return err
-		}
-
-		_, err = file.Write(req.GetData())
-		if err != nil {
-			return err
-		}
+	file, err := s.getFile(req.GetId())
+	if err != nil {
+		return &WriteFileReply{
+			Error: toError(err),
+		}, nil
 	}
+
+	n, err := file.Write(req.GetData())
+	if err != nil {
+		return &WriteFileReply{
+			Error: toError(err),
+		}, nil
+	}
+
+	return &WriteFileReply{
+		SizeWritten: int32(n),
+	}, nil
 }
 
+// TODO: We'll probably want to increase this, perhaps even have it more dynamic or configurable per plugin?
 const READ_BUFFER_SIZE = 1024 * 4
 
 func (s *BridgeStorageProviderServer) ReadFile(req *ReadFileQuery, srv StorageProvider_ReadFileServer) error {
-	file, err := s.getFile(int(req.GetId()))
+	file, err := s.getFile(req.GetId())
 	if err != nil {
 		return err
 	}
@@ -209,14 +223,23 @@ func (s *BridgeStorageProviderServer) ReadFile(req *ReadFileQuery, srv StoragePr
 
 	for {
 		n, err := file.Read(buffer)
+		logrus.Debugf("err: %s, n: %d", err, n)
 		if err != nil {
 			if err == io.EOF {
 				// empty message indicate end of file
-				// TODO: figure out if we can also just return from here instead
-				return srv.Send(&ReadFileReply{})
+				return srv.Send(&ReadFileReply{
+					Data: buffer[:n],
+					EOF:  true,
+				})
 			}
 			return srv.Send(&ReadFileReply{
 				Error: toError(err),
+			})
+		} else if n < 0 {
+			return srv.Send(&ReadFileReply{
+				Error: &Error{
+					Message: fmt.Sprintf("Read returned %d bytes and no error???", n),
+				},
 			})
 		}
 
@@ -235,4 +258,7 @@ func (s *BridgeStorageProviderServer) Delete(ctx context.Context, req *DeleteQue
 		return ErrNoUser, nil
 	}
 	return toError(s.Storage.Delete(ctx, user, req.GetFullPath())), nil
+}
+
+func (s *BridgeStorageProviderServer) mustEmbedUnimplementedStorageProviderServer() {
 }

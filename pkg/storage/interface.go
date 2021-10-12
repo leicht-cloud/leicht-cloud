@@ -15,6 +15,7 @@ type FileInfo struct {
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 	Size      uint64    `json:"size"`
+	Directory bool      `json:"directory"`
 }
 
 type DirectoryInfo struct {
@@ -27,6 +28,7 @@ type File interface {
 	io.WriteCloser
 }
 
+// TODO: Add support for https://pkg.go.dev/io#ReaderAt and https://pkg.go.dev/io#WriterAt ?
 type StorageProvider interface {
 	InitUser(ctx context.Context, user *models.User) error
 	Mkdir(ctx context.Context, user *models.User, path string) error
@@ -34,4 +36,10 @@ type StorageProvider interface {
 	ListDirectory(ctx context.Context, user *models.User, path string) (*DirectoryInfo, error)
 	File(ctx context.Context, user *models.User, fullpath string) (File, error)
 	Delete(ctx context.Context, user *models.User, fullpath string) error
+}
+
+// Implement this interface if you want to be notified after your config is loaded, in case
+// you need to do additional initialization using the config values
+type PostConfigure interface {
+	OnConfigure() error
 }

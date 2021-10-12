@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package plugin;
 
+option go_package = "github.com/schoentoon/go-cloud/pkg/storage/plugin";
+
 // Interface exported by the server.
 service StorageProvider {
   rpc Configure(ConfigData) returns (Error) {}
@@ -18,7 +20,7 @@ service StorageProvider {
 
   rpc CloseFile(CloseFileQuery) returns (Error) {}
 
-  rpc WriteFile(stream WriteFileQuery) returns (Error) {}
+  rpc WriteFile(WriteFileQuery) returns (WriteFileReply) {}
 
   rpc ReadFile(ReadFileQuery) returns (stream ReadFileReply) {}
 
@@ -37,6 +39,7 @@ message FileInfo {
     uint64 createdAt = 4;
     uint64 updatedAt = 5;
     uint64 size = 6;
+    bool directory = 7;
 };
 
 // This maps to the DirectoryInfo struct
@@ -77,26 +80,32 @@ message OpenFileQuery {
 };
 
 message OpenFileReply {
-    uint64 id = 1;
+    int32 id = 1;
     Error error = 2;
 };
 
 message CloseFileQuery {
-    uint64 id = 1;
+    int32 id = 1;
 };
 
 message WriteFileQuery {
-    uint64 id = 1;
+    int32 id = 1;
     bytes data = 2;
 };
 
+message WriteFileReply {
+    int32 size_written = 1;
+    Error error = 2;
+};
+
 message ReadFileQuery {
-    uint64 id = 1;
+    int32 id = 1;
 };
 
 message ReadFileReply {
     bytes data = 1;
-    Error error = 2;
+    bool EOF = 2;
+    Error error = 3;
 };
 
 message DeleteQuery {

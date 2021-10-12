@@ -53,6 +53,7 @@ func (s *StorageProvider) ListDirectory(ctx context.Context, user *models.User, 
 			CreatedAt: info.ModTime(),
 			UpdatedAt: info.ModTime(),
 			Size:      uint64(info.Size()),
+			Directory: entry.IsDir(),
 		})
 	}
 
