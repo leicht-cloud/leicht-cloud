@@ -20,7 +20,7 @@ type File struct {
 }
 
 func (f *File) Read(p []byte) (int, error) {
-	if f.writing == true {
+	if f.writing {
 		return 0, errors.New("File is already opened in write mode")
 	}
 
@@ -79,9 +79,15 @@ func (f *File) readTilEOF(p []byte) (int, error) {
 func (f *File) Close() (err error) {
 	logrus.Debugf("Close()")
 	if f.reader != nil {
-		err = f.reader.CloseSend() // TODO: this error isn't handled correctly atm
+		err = f.reader.CloseSend()
 	}
-	return f.Storage.closeFile(f.Id)
+	err2 := f.Storage.closeFile(f.Id)
+	if err != nil {
+		return err
+	} else if err2 != nil {
+		return err2
+	}
+	return nil
 }
 
 func (f *File) Write(p []byte) (int, error) {
