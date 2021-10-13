@@ -36,7 +36,10 @@ func main() {
 
 	auth := auth.NewProvider(db)
 
-	pluginManager := plugin.NewManager("./plugins")
+	pluginManager, err := plugin.NewManager("./plugins")
+	if err != nil {
+		panic(err)
+	}
 	defer pluginManager.Close()
 
 	storage, err := config.Storage.CreateProvider(pluginManager)

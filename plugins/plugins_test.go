@@ -18,7 +18,8 @@ func TestPlugins(t *testing.T) {
 	dir, err := os.ReadDir(".")
 	assert.NoError(t, err)
 
-	pluginManager := plugin.NewManager(".")
+	pluginManager, err := plugin.NewManager(".")
+	assert.NoError(t, err)
 	defer pluginManager.Close()
 
 	for _, entry := range dir {

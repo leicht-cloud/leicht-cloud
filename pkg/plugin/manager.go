@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -16,15 +17,23 @@ func init() {
 }
 
 type Manager struct {
-	Path    string
+	Path string
+
+	workDir string
 	plugins []*exec.Cmd
 }
 
-func NewManager(pluginPath string) *Manager {
+func NewManager(pluginPath string) (*Manager, error) {
+	workDir := "/tmp/go-cloud/" // TODO: Make this a config option
+	err := os.MkdirAll(workDir, 0700)
+	if err != nil {
+		return nil, err
+	}
 	return &Manager{
 		Path:    pluginPath,
+		workDir: workDir,
 		plugins: make([]*exec.Cmd, 0),
-	}
+	}, nil
 }
 
 func (m *Manager) Close() error {
@@ -55,19 +64,23 @@ func (m *Manager) Start(name string) (*grpc.ClientConn, error) {
 		return nil, fmt.Errorf("plugin '%s' not found at: %s", name, path)
 	}
 
-	// TODO: We'll probably want to do this inter procress communication
-	// over unix sockets on supported platforms
-	port := 60000 + (rand.Int31() % 5000)
+	// TODO: Fall back to tcp on systems without support for unix sockets?
+	err := os.MkdirAll(filepath.Join(m.workDir, name), 0700)
+	if err != nil {
+		return nil, err
+	}
+	socketFile := filepath.Join(m.workDir, name, "grpc.sock")
+
 	cmd := exec.Cmd{
 		Path: path,
-		Env:  []string{fmt.Sprintf("PORT=%d", port)},
+		Env:  []string{fmt.Sprintf("UNIXSOCKET=%s", socketFile)},
 	}
-	err := cmd.Start()
+	err = cmd.Start()
 	if err != nil {
 		return nil, err
 	}
 
-	return grpc.Dial(fmt.Sprintf("127.0.0.1:%d", port),
+	return grpc.Dial(fmt.Sprintf("unix://%s", socketFile),
 		grpc.WithInsecure(),
 		grpc.WithBlock(),
 	)
