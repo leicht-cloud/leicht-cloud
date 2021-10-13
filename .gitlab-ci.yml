@@ -11,23 +11,6 @@ test:
     - find plugins -type d -mindepth 1 -maxdepth 1 -exec sh -c 'cd ./{} && go build .' \;
     - go test -v -cover ./...
 
-test-dind:
-  image: golang:latest
-  services:
-    - docker:dind
-  variables:
-    DOCKER_HOST: tcp://docker:2375
-  before_script:
-    - apt-get update && apt-get install -y protobuf-compiler docker.io
-    - go mod download
-    - go install github.com/golang/protobuf/proto
-    - go install github.com/golang/protobuf/protoc-gen-go
-    - go install google.golang.org/grpc/cmd/protoc-gen-go-grpc
-    - go generate ./...
-  script:
-    - find plugins -type d -mindepth 1 -maxdepth 1 -exec sh -c 'cd ./{} && go build .' \;
-    - go test -v -cover ./...
-
 golangci-linter:
   image:
     name: golangci/golangci-lint:latest
