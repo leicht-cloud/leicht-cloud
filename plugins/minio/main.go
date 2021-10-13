@@ -8,14 +8,7 @@ import (
 func main() {
 	logrus.SetLevel(logrus.DebugLevel)
 
-	// TODO: Handle this through config
-	provider := &StorageProvider{
-		Hostname:        "127.0.0.1:9000",
-		Https:           false,
-		AccessKey:       "go-cloud",
-		SecretAccessKey: "ThisIsASecret",
-		Prefix:          "cloud-",
-	}
+	provider := &StorageProvider{}
 
 	err := plugin.Start(provider)
 	if err != nil {

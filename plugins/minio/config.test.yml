@@ -1,0 +1,5 @@
+hostname: '127.0.0.1:9000'
+https: false
+access_key: go-cloud
+secret_key: ThisIsASecret
+prefix: cloud-
