@@ -23,6 +23,7 @@ var arches = []string{"amd64", "arm64"}
 
 func main() {
 	outdir := flag.String("outdir", ".", "The directory to put the output file in")
+	debug := flag.Bool("debug", false, "Should debug symbols be included in the binaries or not, creates larger packages")
 
 	flag.Parse()
 
@@ -63,7 +64,7 @@ func main() {
 
 	for _, platform := range platforms {
 		for _, arch := range arches {
-			err = buildPlugin(path, tw, platform, arch)
+			err = buildPlugin(path, tw, platform, arch, *debug)
 			if err != nil {
 				logrus.Fatal(err)
 			}
@@ -92,12 +93,16 @@ func writeManifest(tw *tar.Writer, manifest *plugin.Manifest) error {
 	return err
 }
 
-func buildPlugin(path string, tw *tar.Writer, goos, goarch string) error {
+func buildPlugin(path string, tw *tar.Writer, goos, goarch string, debug bool) error {
 	filename := fmt.Sprintf("plugin-%s-%s", goos, goarch)
 	logrus.Infof("Building %s", filename)
 
 	// TODO: Add support for non-golang plugins?
-	cmd := exec.Command("go", "build", "-o", filename, "./...")
+	cmd := exec.Command("go", "build")
+	if debug {
+		cmd.Args = append(cmd.Args, "-ldflags=-s -w")
+	}
+	cmd.Args = append(cmd.Args, "-o", filename, "./...")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Env = append(os.Environ(),
