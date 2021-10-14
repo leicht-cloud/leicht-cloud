@@ -39,7 +39,10 @@ func testPlugin(t *testing.T, pManager *plugin.Manager, name string) {
 	if err != nil {
 		t.Skip(err)
 	}
-	defer teardownTestEnv(name)
+	defer func() {
+		err = teardownTestEnv(name)
+		assert.NoError(t, err)
+	}()
 
 	assert.NoError(t, err)
 
