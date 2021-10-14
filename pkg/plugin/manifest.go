@@ -23,7 +23,7 @@ type Manifest struct {
 }
 
 // path should be the path to the plugin, not directly to the manifest
-func ParseManifest(path string) (*Manifest, error) {
+func ParseManifestFromFile(path string) (*Manifest, error) {
 	f, err := os.Open(filepath.Join(path, "plugin.manifest.yml"))
 	if err != nil {
 		return nil, err

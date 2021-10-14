@@ -18,7 +18,11 @@ func TestPlugins(t *testing.T) {
 	dir, err := os.ReadDir(".")
 	assert.NoError(t, err)
 
-	pluginManager, err := plugin.NewManager(".")
+	cfg := plugin.Config{
+		Path:    []string{"."},
+		WorkDir: t.TempDir(),
+	}
+	pluginManager, err := cfg.CreateManager()
 	assert.NoError(t, err)
 	defer pluginManager.Close()
 

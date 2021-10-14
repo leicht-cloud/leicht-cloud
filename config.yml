@@ -1,4 +1,8 @@
 db: test.db
+plugin:
+  path:
+    - ./plugins
+  workdir: /tmp/go-cloud/
 storage:
   provider: local-storage
   extra:

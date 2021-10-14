@@ -4,10 +4,12 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
+	"flag"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 
 	"github.com/schoentoon/go-cloud/pkg/plugin"
 	"github.com/sirupsen/logrus"
@@ -20,17 +22,21 @@ var platforms = []string{"linux"}
 var arches = []string{"amd64", "arm64"}
 
 func main() {
-	if len(os.Args) != 2 {
+	outdir := flag.String("outdir", ".", "The directory to put the output file in")
+
+	flag.Parse()
+
+	if len(flag.Args()) != 1 {
 		logrus.Fatalf("Requires 1 argument, got %d", len(os.Args))
 	}
-	path := os.Args[1]
+	path := flag.Arg(0)
 
-	manifest, err := plugin.ParseManifest(path)
+	manifest, err := plugin.ParseManifestFromFile(path)
 	if err != nil {
 		logrus.Fatal(err)
 	}
 
-	fout, err := os.OpenFile(fmt.Sprintf("%s.plugin", manifest.Name), os.O_CREATE|os.O_WRONLY, 0400)
+	fout, err := os.OpenFile(filepath.Join(*outdir, fmt.Sprintf("%s.plugin", manifest.Name)), os.O_CREATE|os.O_WRONLY, 0400)
 	if err != nil {
 		logrus.Fatal(err)
 	}

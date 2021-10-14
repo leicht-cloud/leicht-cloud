@@ -1,36 +1,39 @@
 package plugin
 
 import (
+	"archive/tar"
+	"compress/gzip"
+	"errors"
 	"fmt"
-	"math/rand"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"time"
+	"runtime"
 
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 )
 
-func init() {
-	rand.Seed(time.Now().Unix())
-}
-
 type Manager struct {
-	Path string
-
+	path    []string
 	workDir string
 	plugins []*exec.Cmd
 }
 
-func NewManager(pluginPath string) (*Manager, error) {
-	workDir := "/tmp/go-cloud/" // TODO: Make this a config option
+type Config struct {
+	Path    []string `yaml:"path"`
+	WorkDir string   `yaml:"workdir"`
+}
+
+func (c *Config) CreateManager() (*Manager, error) {
+	workDir := c.WorkDir
 	err := os.MkdirAll(workDir, 0700)
 	if err != nil {
 		return nil, err
 	}
 	return &Manager{
-		Path:    pluginPath,
+		path:    c.Path,
 		workDir: workDir,
 		plugins: make([]*exec.Cmd, 0),
 	}, nil
@@ -55,24 +58,116 @@ func (m *Manager) Close() error {
 	return nil
 }
 
-func (m *Manager) Start(name string) (*grpc.ClientConn, error) {
-	// TODO: We should improve where and how it searches for plugins
-	// alongside we'll want to implement some form of manifest and
-	// namespace the running plugin process
-	path := fmt.Sprintf("%s/%s/%s", m.Path, name, name)
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return nil, fmt.Errorf("plugin '%s' not found at: %s", name, path)
-	}
-
-	// TODO: Fall back to tcp on systems without support for unix sockets?
-	err := os.MkdirAll(filepath.Join(m.workDir, name), 0700)
+// The idea is that every single plugin will get their own working directory.
+// As plugins can be packaged up we will copy the binary for the actual plugin
+// into this working directory and execute it from there.
+// We do however also support running against a directory directly, this does
+// assume the binary is called the same as the plugin (it's copied regardless)
+// and the directory has a manifest in it.
+// TODO: run the plugin in namespaces and have said working directory actually be their root
+func (m *Manager) prepareDirectory(name string) (*Manifest, error) {
+	workDir := filepath.Join(m.workDir, name)
+	err := os.MkdirAll(workDir, 0700)
 	if err != nil {
 		return nil, err
 	}
-	socketFile := filepath.Join(m.workDir, name, "grpc.sock")
+
+	pluginFile := filepath.Join(workDir, "plugin")
+
+	// TODO: We should improve where and how it searches for plugins
+	// alongside we'll want to implement some form of manifest and
+	// namespace the running plugin process
+
+	for _, path := range m.path {
+		// PLUGIN FILE APPROACH //
+		pluginPath := filepath.Join(path, fmt.Sprintf("%s.plugin", name))
+		f, err := os.Open(pluginPath)
+		if err == nil {
+			defer f.Close()
+
+			decompressor, err := gzip.NewReader(f)
+			if err != nil {
+				return nil, err
+			}
+
+			tr := tar.NewReader(decompressor)
+			var manifest *Manifest
+			copiedExe := false
+
+			wantedExecutable := fmt.Sprintf("plugin-%s-%s", runtime.GOOS, runtime.GOARCH)
+
+			for manifest == nil || !copiedExe {
+				header, err := tr.Next()
+				if err != nil {
+					return nil, err
+				}
+				if header.Name == "plugin.manifest.yml" {
+					manifest, err = parseManifest(tr)
+					if err != nil {
+						return nil, err
+					}
+				} else if header.Name == wantedExecutable {
+					dst, err := os.OpenFile(pluginFile, os.O_CREATE|os.O_WRONLY, 0500)
+					if err != nil {
+						return nil, err
+					}
+					defer dst.Close()
+					_, err = io.Copy(dst, tr)
+					if err != nil {
+						return nil, err
+					}
+					copiedExe = true
+				}
+			}
+
+			if manifest != nil && copiedExe {
+				return manifest, nil
+			} else if manifest == nil {
+				return nil, errors.New("Missing manifest")
+			} else if !copiedExe {
+				return nil, fmt.Errorf("Missing executable %s", wantedExecutable)
+			}
+		}
+
+		// DIRECTORY APPROACH //
+		// we first look if we have a build plugin in a directory with the same name
+		dir := filepath.Join(path, name)
+		fi, err := os.Stat(dir)
+		if err == nil && fi.IsDir() {
+			manifest, err := ParseManifestFromFile(filepath.Join(path, name))
+			if err != nil {
+				return nil, err
+			}
+			src, err := os.Open(filepath.Join(dir, name))
+			if err != nil {
+				return nil, err
+			}
+			defer src.Close()
+			dst, err := os.OpenFile(pluginFile, os.O_CREATE|os.O_WRONLY, 0500)
+			if err != nil {
+				return nil, err
+			}
+			defer dst.Close()
+			_, err = io.Copy(dst, src)
+			return manifest, err
+		}
+	}
+
+	return nil, fmt.Errorf("Plugin not found: %s", name)
+}
+
+func (m *Manager) Start(name string) (*grpc.ClientConn, error) {
+	workDir := filepath.Join(m.workDir, name)
+	_, err := m.prepareDirectory(name)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: Fall back to tcp on systems without support for unix sockets?
+	socketFile := filepath.Join(workDir, "grpc.sock")
 
 	cmd := exec.Cmd{
-		Path: path,
+		Path: filepath.Join(workDir, "plugin"),
 		Env:  []string{fmt.Sprintf("UNIXSOCKET=%s", socketFile)},
 	}
 	err = cmd.Start()
