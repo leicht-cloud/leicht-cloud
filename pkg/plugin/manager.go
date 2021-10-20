@@ -58,6 +58,8 @@ func (m *Manager) Close() error {
 	return nil
 }
 
+const plugin_permissions = 0750
+
 // The idea is that every single plugin will get their own working directory.
 // As plugins can be packaged up we will copy the binary for the actual plugin
 // into this working directory and execute it from there.
@@ -107,7 +109,7 @@ func (m *Manager) prepareDirectory(name string) (*Manifest, error) {
 						return nil, err
 					}
 				} else if header.Name == wantedExecutable {
-					dst, err := os.OpenFile(pluginFile, os.O_CREATE|os.O_WRONLY, 0500)
+					dst, err := os.OpenFile(pluginFile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, plugin_permissions)
 					if err != nil {
 						return nil, err
 					}
@@ -143,7 +145,7 @@ func (m *Manager) prepareDirectory(name string) (*Manifest, error) {
 				return nil, err
 			}
 			defer src.Close()
-			dst, err := os.OpenFile(pluginFile, os.O_CREATE|os.O_WRONLY, 0500)
+			dst, err := os.OpenFile(pluginFile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, plugin_permissions)
 			if err != nil {
 				return nil, err
 			}
