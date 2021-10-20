@@ -4,22 +4,30 @@ package plugin
 
 import (
 	"fmt"
-	"log"
 	"net"
 	"os"
 
 	"github.com/schoentoon/go-cloud/pkg/storage"
+	"github.com/sirupsen/logrus"
 	grpc "google.golang.org/grpc"
 )
 
 // This is meant to be called in the main() of your plugin
-func Start(storage storage.StorageProvider) error {
+func Start(storage storage.StorageProvider) (err error) {
+	var lis net.Listener
 	port := os.Getenv("PORT")
-	lis, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%s", port))
+	unixSocket := os.Getenv("UNIXSOCKET")
+	if unixSocket != "" {
+		lis, err = net.Listen("unix", unixSocket)
+	} else if port != "" {
+		lis, err = net.Listen("tcp", fmt.Sprintf("127.0.0.1:%s", port))
+	} else {
+		logrus.Fatalf("Neither PORT or UNIXSOCKET is specified")
+	}
 	if err != nil {
 		return err
 	}
-	log.Printf("Listening for grpc on %s\n", lis.Addr())
+	logrus.Infof("Listening for grpc on %s\n", lis.Addr())
 
 	server := grpc.NewServer(
 		grpc.MaxRecvMsgSize(1024 * 1024 * 32),

@@ -6,7 +6,6 @@ import (
 	"github.com/schoentoon/go-cloud/pkg/auth"
 	gchttp "github.com/schoentoon/go-cloud/pkg/http"
 	"github.com/schoentoon/go-cloud/pkg/models"
-	"github.com/schoentoon/go-cloud/pkg/plugin"
 
 	"github.com/sirupsen/logrus"
 	"gorm.io/driver/sqlite"
@@ -36,7 +35,10 @@ func main() {
 
 	auth := auth.NewProvider(db)
 
-	pluginManager := plugin.NewManager("./plugins")
+	pluginManager, err := config.Plugin.CreateManager()
+	if err != nil {
+		panic(err)
+	}
 	defer pluginManager.Close()
 
 	storage, err := config.Storage.CreateProvider(pluginManager)
