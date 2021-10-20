@@ -10,7 +10,9 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"syscall"
 
+	"github.com/docker/docker/pkg/reexec"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 )
@@ -168,9 +170,35 @@ func (m *Manager) Start(name string) (*grpc.ClientConn, error) {
 	// TODO: Fall back to tcp on systems without support for unix sockets?
 	socketFile := filepath.Join(workDir, "grpc.sock")
 
-	cmd := exec.Cmd{
-		Path: filepath.Join(workDir, "plugin"),
-		Env:  []string{fmt.Sprintf("UNIXSOCKET=%s", socketFile)},
+	cmd := reexec.Command("pluginNamespace")
+	cmd.Stdout = os.Stdout
+	cmd.Stdin = os.Stdin
+	cmd.Stderr = os.Stderr
+	cmd.Dir = workDir
+	cmd.Env = []string{
+		fmt.Sprintf("PLUGIN=%s", name),
+	}
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		Cloneflags: syscall.CLONE_NEWNS |
+			syscall.CLONE_NEWUTS |
+			syscall.CLONE_NEWIPC |
+			syscall.CLONE_NEWPID |
+			syscall.CLONE_NEWNET |
+			syscall.CLONE_NEWUSER,
+		UidMappings: []syscall.SysProcIDMap{
+			{
+				ContainerID: 0,
+				HostID:      os.Getuid(),
+				Size:        1,
+			},
+		},
+		GidMappings: []syscall.SysProcIDMap{
+			{
+				ContainerID: 0,
+				HostID:      os.Getgid(),
+				Size:        1,
+			},
+		},
 	}
 	err = cmd.Start()
 	if err != nil {
