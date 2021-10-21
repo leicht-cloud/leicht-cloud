@@ -10,7 +10,9 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"sync"
 	"syscall"
+	"time"
 
 	"github.com/docker/docker/pkg/reexec"
 	"github.com/sirupsen/logrus"
@@ -49,22 +51,42 @@ func (c *Config) CreateManager() (*Manager, error) {
 }
 
 func (m *Manager) Close() error {
+	var wg sync.WaitGroup
+	wg.Add(len(m.plugins))
 	for _, plugin := range m.plugins {
-		err := plugin.Process.Signal(os.Interrupt)
-		if err != nil {
-			logrus.Errorf("Got %s, so killing it instead.", err)
-			err = plugin.Process.Kill()
+		go func(wg *sync.WaitGroup, plugin *exec.Cmd) {
+			err := m.killProcess(plugin)
 			if err != nil {
-				logrus.Errorf("Error %s while killing process? wtf", err)
+				logrus.Error(err)
 			}
-		}
-		// TODO: We should only wait for a certain time, don't give plugins infinite time to end cleanly
-		err = plugin.Wait()
+			wg.Done()
+		}(&wg, plugin)
+	}
+	wg.Wait()
+	return nil
+}
+
+func (m *Manager) killProcess(plugin *exec.Cmd) error {
+	err := plugin.Process.Signal(os.Interrupt)
+	if err != nil {
+		logrus.Errorf("Got %s, so killing it instead.", err)
+		err = plugin.Process.Kill()
 		if err != nil {
-			logrus.Errorf("Error %s while waiting for %+v to end", err, *plugin)
+			return err
 		}
 	}
-	return nil
+	c := make(chan error, 1)
+	defer close(c)
+	go func(c chan<- error, plugin *exec.Cmd) {
+		c <- plugin.Wait()
+	}(c, plugin)
+
+	select {
+	case err = <-c:
+		return err
+	case <-time.After(time.Second * 10):
+		return plugin.Process.Signal(os.Kill)
+	}
 }
 
 const plugin_permissions = 0750
@@ -75,7 +97,6 @@ const plugin_permissions = 0750
 // We do however also support running against a directory directly, this does
 // assume the binary is called the same as the plugin (it's copied regardless)
 // and the directory has a manifest in it.
-// TODO: run the plugin in namespaces and have said working directory actually be their root
 func (m *Manager) prepareDirectory(name string) (*Manifest, error) {
 	workDir := filepath.Join(m.workDir, name)
 	err := os.MkdirAll(workDir, 0700)
