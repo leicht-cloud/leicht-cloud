@@ -18,14 +18,16 @@ import (
 )
 
 type Manager struct {
-	path    []string
-	workDir string
-	plugins []*exec.Cmd
+	path       []string
+	workDir    string
+	namespaced bool
+	plugins    []*exec.Cmd
 }
 
 type Config struct {
-	Path    []string `yaml:"path"`
-	WorkDir string   `yaml:"workdir"`
+	Path       []string `yaml:"path"`
+	WorkDir    string   `yaml:"workdir"`
+	Namespaced *bool    `yaml:"namespaced,omitempty"`
 }
 
 func (c *Config) CreateManager() (*Manager, error) {
@@ -34,10 +36,15 @@ func (c *Config) CreateManager() (*Manager, error) {
 	if err != nil {
 		return nil, err
 	}
+	namespaced := true
+	if c.Namespaced != nil {
+		namespaced = *c.Namespaced
+	}
 	return &Manager{
-		path:    c.Path,
-		workDir: workDir,
-		plugins: make([]*exec.Cmd, 0),
+		path:       c.Path,
+		workDir:    workDir,
+		namespaced: namespaced,
+		plugins:    make([]*exec.Cmd, 0),
 	}, nil
 }
 
@@ -54,7 +61,7 @@ func (m *Manager) Close() error {
 		// TODO: We should only wait for a certain time, don't give plugins infinite time to end cleanly
 		err = plugin.Wait()
 		if err != nil {
-			logrus.Errorf("Error %s while waiting for %s to end", err, plugin)
+			logrus.Errorf("Error %s while waiting for %+v to end", err, *plugin)
 		}
 	}
 	return nil
@@ -170,39 +177,55 @@ func (m *Manager) Start(name string) (*grpc.ClientConn, error) {
 	// TODO: Fall back to tcp on systems without support for unix sockets?
 	socketFile := filepath.Join(workDir, "grpc.sock")
 
-	cmd := reexec.Command("pluginNamespace")
-	cmd.Stdout = os.Stdout
-	cmd.Stdin = os.Stdin
-	cmd.Stderr = os.Stderr
-	cmd.Dir = workDir
-	cmd.Env = []string{
-		fmt.Sprintf("PLUGIN=%s", name),
-	}
-	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Cloneflags: syscall.CLONE_NEWNS |
-			syscall.CLONE_NEWUTS |
-			syscall.CLONE_NEWIPC |
-			syscall.CLONE_NEWPID |
-			syscall.CLONE_NEWNET |
-			syscall.CLONE_NEWUSER,
-		UidMappings: []syscall.SysProcIDMap{
-			{
-				ContainerID: 0,
-				HostID:      os.Getuid(),
-				Size:        1,
+	if m.namespaced {
+		cmd := reexec.Command("pluginNamespace")
+		cmd.Stdout = os.Stdout
+		cmd.Stdin = os.Stdin
+		cmd.Stderr = os.Stderr
+		cmd.Dir = workDir
+		cmd.Env = []string{
+			fmt.Sprintf("PLUGIN=%s", name),
+		}
+		cmd.SysProcAttr = &syscall.SysProcAttr{
+			Cloneflags: syscall.CLONE_NEWNS |
+				syscall.CLONE_NEWUTS |
+				syscall.CLONE_NEWIPC |
+				syscall.CLONE_NEWPID |
+				syscall.CLONE_NEWNET |
+				syscall.CLONE_NEWUSER,
+			UidMappings: []syscall.SysProcIDMap{
+				{
+					ContainerID: 0,
+					HostID:      os.Getuid(),
+					Size:        1,
+				},
 			},
-		},
-		GidMappings: []syscall.SysProcIDMap{
-			{
-				ContainerID: 0,
-				HostID:      os.Getgid(),
-				Size:        1,
+			GidMappings: []syscall.SysProcIDMap{
+				{
+					ContainerID: 0,
+					HostID:      os.Getgid(),
+					Size:        1,
+				},
 			},
-		},
-	}
-	err = cmd.Start()
-	if err != nil {
-		return nil, err
+		}
+		err = cmd.Start()
+		if err != nil {
+			return nil, err
+		}
+		m.plugins = append(m.plugins, cmd)
+	} else {
+		cmd := exec.Cmd{
+			Path: filepath.Join(workDir, "plugin"),
+			Env: []string{
+				fmt.Sprintf("UNIXSOCKET=%s", socketFile),
+				fmt.Sprintf("PLUGIN=%s", name),
+			},
+		}
+		err = cmd.Start()
+		if err != nil {
+			return nil, err
+		}
+		m.plugins = append(m.plugins, &cmd)
 	}
 
 	return grpc.Dial(fmt.Sprintf("unix://%s", socketFile),
