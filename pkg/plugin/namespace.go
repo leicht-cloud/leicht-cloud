@@ -1,7 +1,6 @@
 package plugin
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 
@@ -34,7 +33,7 @@ func pluginNamespace() {
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
 	cmd.Env = append(os.Environ(),
-		fmt.Sprintf("UNIXSOCKET=/grpc.sock"),
+		"UNIXSOCKET=/grpc.sock",
 	)
 	err = cmd.Run()
 	if err != nil {

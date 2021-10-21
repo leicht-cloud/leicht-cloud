@@ -54,7 +54,9 @@ func mountProc(newroot string) error {
 	flags := 0
 	data := ""
 
-	os.MkdirAll(target, 0755)
+	if err := os.MkdirAll(target, 0755); err != nil {
+		return err
+	}
 	if err := syscall.Mount(source, target, fstype, uintptr(flags), data); err != nil {
 		return err
 	}
