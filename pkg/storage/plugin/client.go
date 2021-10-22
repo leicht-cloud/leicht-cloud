@@ -6,6 +6,7 @@ package plugin
 import (
 	context "context"
 	"errors"
+	"io"
 	"sync"
 	"time"
 
@@ -103,7 +104,7 @@ func (s *GrpcStorage) Move(ctx context.Context, user *models.User, src, dst stri
 	return toError2(err, Err)
 }
 
-func (s *GrpcStorage) ListDirectory(ctx context.Context, user *models.User, path string) (*storage.DirectoryInfo, error) {
+func (s *GrpcStorage) ListDirectory(ctx context.Context, user *models.User, path string) (<-chan storage.FileInfo, error) {
 	dir, err := s.Client.ListDirectory(ctx,
 		&ListDirectoryQuery{
 			User: &User{
@@ -112,26 +113,30 @@ func (s *GrpcStorage) ListDirectory(ctx context.Context, user *models.User, path
 			Path: path,
 		},
 	)
-	outErr := toError2(dir.Error, err)
-	if outErr != nil {
+	if err != nil {
 		return nil, err
 	}
 
-	out := &storage.DirectoryInfo{
-		Path:  path,
-		Files: make([]storage.FileInfo, 0, len(dir.Files)),
-	}
+	out := make(chan storage.FileInfo)
 
-	for _, file := range dir.Files {
-		out.Files = append(out.Files, storage.FileInfo{
-			Name:      file.Name,
-			FullPath:  file.FullPath,
-			MimeType:  file.MimeType,
-			CreatedAt: time.Unix(int64(file.CreatedAt), 0),
-			UpdatedAt: time.Unix(int64(file.UpdatedAt), 0),
-			Size:      file.Size,
-		})
-	}
+	go func(out chan<- storage.FileInfo) {
+		for {
+			reply, err := dir.Recv()
+			if err == io.EOF {
+				close(out)
+				return
+			}
+
+			out <- storage.FileInfo{
+				Name:      reply.Name,
+				FullPath:  reply.FullPath,
+				MimeType:  reply.MimeType,
+				CreatedAt: time.Unix(int64(reply.CreatedAt), 0),
+				UpdatedAt: time.Unix(int64(reply.UpdatedAt), 0),
+				Size:      reply.Size,
+			}
+		}
+	}(out)
 
 	return out, nil
 }

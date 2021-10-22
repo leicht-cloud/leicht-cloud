@@ -33,7 +33,7 @@ type StorageProvider interface {
 	InitUser(ctx context.Context, user *models.User) error
 	Mkdir(ctx context.Context, user *models.User, path string) error
 	Move(ctx context.Context, user *models.User, src, dst string) error
-	ListDirectory(ctx context.Context, user *models.User, path string) (*DirectoryInfo, error)
+	ListDirectory(ctx context.Context, user *models.User, path string) (<-chan FileInfo, error)
 	File(ctx context.Context, user *models.User, fullpath string) (File, error)
 	Delete(ctx context.Context, user *models.User, fullpath string) error
 }

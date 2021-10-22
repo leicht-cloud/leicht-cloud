@@ -3,6 +3,7 @@ package local
 import (
 	"context"
 	"fmt"
+	"io/fs"
 	"os"
 	"path"
 
@@ -30,32 +31,33 @@ func (s *StorageProvider) Move(ctx context.Context, user *models.User, src, dst 
 	return os.Rename(s.joinPath(user, src), s.joinPath(user, dst))
 }
 
-func (s *StorageProvider) ListDirectory(ctx context.Context, user *models.User, dir string) (*storage.DirectoryInfo, error) {
+func (s *StorageProvider) ListDirectory(ctx context.Context, user *models.User, dir string) (<-chan storage.FileInfo, error) {
 	direntires, err := os.ReadDir(s.joinPath(user, dir))
 	if err != nil {
 		return nil, err
 	}
 
-	out := &storage.DirectoryInfo{
-		Path:  dir,
-		Files: make([]storage.FileInfo, 0, len(direntires)),
-	}
+	out := make(chan storage.FileInfo)
 
-	for _, entry := range direntires {
-		info, err := entry.Info()
-		if err != nil {
-			return nil, err
+	go func(out chan<- storage.FileInfo, direntries []fs.DirEntry) {
+		for _, entry := range direntries {
+			info, err := entry.Info()
+			if err != nil {
+				continue
+			}
+			out <- storage.FileInfo{
+				Name:      entry.Name(),
+				FullPath:  path.Join(dir, entry.Name()),
+				MimeType:  "",
+				CreatedAt: info.ModTime(),
+				UpdatedAt: info.ModTime(),
+				Size:      uint64(info.Size()),
+				Directory: entry.IsDir(),
+			}
 		}
-		out.Files = append(out.Files, storage.FileInfo{
-			Name:      entry.Name(),
-			FullPath:  path.Join(dir, entry.Name()),
-			MimeType:  "",
-			CreatedAt: info.ModTime(),
-			UpdatedAt: info.ModTime(),
-			Size:      uint64(info.Size()),
-			Directory: entry.IsDir(),
-		})
-	}
+
+		close(out)
+	}(out, direntires)
 
 	return out, nil
 }
