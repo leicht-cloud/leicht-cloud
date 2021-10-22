@@ -195,7 +195,7 @@ func (m *Manager) prepareDirectory(name string) (*Manifest, error) {
 
 func (m *Manager) Start(name string) (*grpc.ClientConn, error) {
 	workDir := filepath.Join(m.workDir, name)
-	_, err := m.prepareDirectory(name)
+	manifest, err := m.prepareDirectory(name)
 	if err != nil {
 		return nil, err
 	}
@@ -230,6 +230,14 @@ func (m *Manager) Start(name string) (*grpc.ClientConn, error) {
 				},
 			},
 		}
+
+		// TODO: For now we only move into a network namespace if the plugin is NOT supposed to get any network access
+		// this is mostly because namespaced network requires a bit more setup and some iptables magic to work properly
+		// so for now we just piggyback off the host network instead if a plugin wants network.
+		if !manifest.Permissions.Network {
+			cmd.SysProcAttr.Cloneflags |= syscall.CLONE_NEWNET
+		}
+
 		err = cmd.Start()
 		if err != nil {
 			return nil, err
