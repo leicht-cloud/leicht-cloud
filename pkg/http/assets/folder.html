@@ -21,19 +21,22 @@ body {
     </style>
     <script>
       $(document).ready(function() {
-          $('#directory').DataTable( {
-              "ajax": {
-                  "url": "/api/list",
-                  "dataSrc": "files"
-              },
-              "dataSrc": "files",
-              "columns": [
-                  { "data": "name" },
-                  { "data": "created_at" },
-                  { "data": "size"},
-              ]
-          } );
-      } );
+          var datatable = $('#directory').DataTable();
+
+          $.get("/api/list")
+            .then(data=>data.split('\n'))
+            .then(data=>data.forEach(function(data) {
+              if (data == "") {
+                return;
+              }
+              json = JSON.parse(data);
+              datatable.row.add([
+                json.name,
+                json.created_at,
+                json.size
+              ]).draw(false);
+            })).then(datatable.draw());
+      });
     </script>
   </head>
   <body class="text-center">
