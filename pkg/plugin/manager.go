@@ -23,7 +23,7 @@ type Manager struct {
 	path       []string
 	workDir    string
 	namespaced bool
-	plugins    []*exec.Cmd
+	plugins    map[string]*exec.Cmd
 }
 
 type Config struct {
@@ -46,27 +46,32 @@ func (c *Config) CreateManager() (*Manager, error) {
 		path:       c.Path,
 		workDir:    workDir,
 		namespaced: namespaced,
-		plugins:    make([]*exec.Cmd, 0),
+		plugins:    make(map[string]*exec.Cmd, 0),
 	}, nil
 }
 
 func (m *Manager) Close() error {
+	logrus.Info("Closing plugin manager")
 	var wg sync.WaitGroup
 	wg.Add(len(m.plugins))
-	for _, plugin := range m.plugins {
-		go func(wg *sync.WaitGroup, plugin *exec.Cmd) {
-			err := m.killProcess(plugin)
+	for name, plugin := range m.plugins {
+		go func(wg *sync.WaitGroup, name string, plugin *exec.Cmd) {
+			err := m.killProcess(name, plugin)
 			if err != nil {
 				logrus.Error(err)
 			}
 			wg.Done()
-		}(&wg, plugin)
+		}(&wg, name, plugin)
 	}
 	wg.Wait()
+	logrus.Info("Closed plugin manager")
 	return nil
 }
 
-func (m *Manager) killProcess(plugin *exec.Cmd) error {
+func (m *Manager) killProcess(name string, plugin *exec.Cmd) error {
+	// remove the unix socket
+	defer os.Remove(filepath.Join(m.workDir, name, "grpc.sock"))
+
 	err := plugin.Process.Signal(os.Interrupt)
 	if err != nil {
 		logrus.Errorf("Got %s, so killing it instead.", err)
@@ -85,7 +90,7 @@ func (m *Manager) killProcess(plugin *exec.Cmd) error {
 	case err = <-c:
 		return err
 	case <-time.After(time.Second * 10):
-		return plugin.Process.Signal(os.Kill)
+		return plugin.Process.Kill()
 	}
 }
 
@@ -200,9 +205,6 @@ func (m *Manager) Start(name string) (*grpc.ClientConn, error) {
 
 	if m.namespaced {
 		cmd := reexec.Command("pluginNamespace")
-		cmd.Stdout = os.Stdout
-		cmd.Stdin = os.Stdin
-		cmd.Stderr = os.Stderr
 		cmd.Dir = workDir
 		cmd.Env = []string{
 			fmt.Sprintf("PLUGIN=%s", name),
@@ -212,7 +214,6 @@ func (m *Manager) Start(name string) (*grpc.ClientConn, error) {
 				syscall.CLONE_NEWUTS |
 				syscall.CLONE_NEWIPC |
 				syscall.CLONE_NEWPID |
-				syscall.CLONE_NEWNET |
 				syscall.CLONE_NEWUSER,
 			UidMappings: []syscall.SysProcIDMap{
 				{
@@ -233,7 +234,7 @@ func (m *Manager) Start(name string) (*grpc.ClientConn, error) {
 		if err != nil {
 			return nil, err
 		}
-		m.plugins = append(m.plugins, cmd)
+		m.plugins[name] = cmd
 	} else {
 		cmd := exec.Cmd{
 			Path: filepath.Join(workDir, "plugin"),
@@ -246,7 +247,7 @@ func (m *Manager) Start(name string) (*grpc.ClientConn, error) {
 		if err != nil {
 			return nil, err
 		}
-		m.plugins = append(m.plugins, &cmd)
+		m.plugins[name] = &cmd
 	}
 
 	return grpc.Dial(fmt.Sprintf("unix://%s", socketFile),

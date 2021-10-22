@@ -23,10 +23,13 @@ func TestPlugins(t *testing.T) {
 		WorkDir:    t.TempDir(),
 		Namespaced: new(bool),
 	}
-	// TODO: We currently test without namespacing as this just doesn't work inside docker
-	// ideally I setup another runner that doesn't run inside docker.
-	// Or of course figure out a way to run inside docker anyway, ideally without the need of --privileged or something
-	*cfg.Namespaced = false
+	*cfg.Namespaced = true
+
+	// inside CI we will NOT run namespaced, as it means we're probably running inside docker
+	if os.Getenv("CI") != "" {
+		*cfg.Namespaced = false
+	}
+
 	pluginManager, err := cfg.CreateManager()
 	assert.NoError(t, err)
 	defer pluginManager.Close()
