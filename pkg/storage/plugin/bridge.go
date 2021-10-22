@@ -91,28 +91,19 @@ func (s *BridgeStorageProviderServer) Move(ctx context.Context, req *MoveQuery) 
 	return toError(s.Storage.Move(ctx, user, req.GetSrc(), req.GetDst())), nil
 }
 
-func (s *BridgeStorageProviderServer) ListDirectory(ctx context.Context, req *ListDirectoryQuery) (*ListDirectoryInfoReply, error) {
+func (s *BridgeStorageProviderServer) ListDirectory(req *ListDirectoryQuery, srv StorageProvider_ListDirectoryServer) error {
 	user := toUser(req.GetUser())
 	if user == nil {
-		return &ListDirectoryInfoReply{
-			Error: ErrNoUser,
-		}, nil
+		return nil
 	}
 
-	files, err := s.Storage.ListDirectory(ctx, user, req.GetPath())
+	files, err := s.Storage.ListDirectory(srv.Context(), user, req.GetPath())
 	if err != nil {
-		return &ListDirectoryInfoReply{
-			Error: toError(err),
-		}, nil
+		return err
 	}
 
-	out := &ListDirectoryInfoReply{
-		Path:  req.GetPath(),
-		Files: make([]*FileInfo, 0, len(files.Files)),
-	}
-
-	for _, f := range files.Files {
-		file := &FileInfo{
+	for f := range files {
+		err = srv.Send(&FileInfo{
 			Name:      f.Name,
 			FullPath:  f.FullPath,
 			MimeType:  f.MimeType,
@@ -120,12 +111,13 @@ func (s *BridgeStorageProviderServer) ListDirectory(ctx context.Context, req *Li
 			UpdatedAt: uint64(f.UpdatedAt.Unix()),
 			Size:      f.Size,
 			Directory: f.Directory,
+		})
+		if err != nil {
+			return err
 		}
-
-		out.Files = append(out.Files, file)
 	}
 
-	return out, nil
+	return nil
 }
 
 func (s *BridgeStorageProviderServer) OpenFile(ctx context.Context, req *OpenFileQuery) (*OpenFileReply, error) {

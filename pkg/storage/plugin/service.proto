@@ -14,7 +14,7 @@ service StorageProvider {
 
   rpc Move(MoveQuery) returns (Error) {}
 
-  rpc ListDirectory(ListDirectoryQuery) returns (ListDirectoryInfoReply) {}
+  rpc ListDirectory(ListDirectoryQuery) returns (stream FileInfo) {}
 
   rpc OpenFile(OpenFileQuery) returns (OpenFileReply) {}
 
@@ -40,13 +40,6 @@ message FileInfo {
     uint64 updatedAt = 5;
     uint64 size = 6;
     bool directory = 7;
-};
-
-// This maps to the DirectoryInfo struct
-message ListDirectoryInfoReply {
-    Error error = 1;
-    string path = 2;
-    repeated FileInfo files = 3;
 };
 
 // This sort of maps to the User struct, although we only give the id as that should be the only relevant thing.

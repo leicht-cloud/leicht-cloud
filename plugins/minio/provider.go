@@ -91,7 +91,25 @@ func (s *StorageProvider) Move(ctx context.Context, user *models.User, src, dst 
 	return s.Delete(ctx, user, src)
 }
 
-func (s *StorageProvider) ListDirectory(ctx context.Context, user *models.User, dir string) (*storage.DirectoryInfo, error) {
+func (s *StorageProvider) minioObjToFileInfo(obj minio.ObjectInfo, dir string) (*storage.FileInfo, error) {
+	if obj.Err != nil {
+		return nil, obj.Err
+	}
+
+	isDir := strings.HasSuffix(obj.Key, "/")
+	path := strings.TrimSuffix(obj.Key, "/")
+
+	return &storage.FileInfo{
+		Name:      strings.TrimPrefix(path, dir),
+		FullPath:  path,
+		MimeType:  obj.ContentType,
+		UpdatedAt: obj.LastModified,
+		Size:      uint64(obj.Size),
+		Directory: isDir,
+	}, nil
+}
+
+func (s *StorageProvider) ListDirectory(ctx context.Context, user *models.User, dir string) (<-chan storage.FileInfo, error) {
 	if !strings.HasSuffix(dir, "/") {
 		dir = dir + "/"
 	}
@@ -101,36 +119,31 @@ func (s *StorageProvider) ListDirectory(ctx context.Context, user *models.User, 
 		Prefix:    dir,
 	})
 
-	out := &storage.DirectoryInfo{
-		Path:  dir,
-		Files: make([]storage.FileInfo, 0),
-	}
+	out := make(chan storage.FileInfo, 1)
 
-	for entry := range ch {
-		logrus.Debugf("%+v", entry)
-		if entry.Err != nil {
-			return nil, entry.Err
+	fi, err := s.minioObjToFileInfo(<-ch, dir)
+	if err != nil {
+		return nil, err
+	}
+	out <- *fi
+
+	go func(out chan<- storage.FileInfo, ch <-chan minio.ObjectInfo) {
+		for entry := range ch {
+			// this is the holder file created by mkdir, so we ignore it
+			if strings.HasSuffix(entry.Key, ".go-cloud") {
+				continue
+			} else if entry.Key == "/" {
+				continue
+			}
+
+			fi, err = s.minioObjToFileInfo(entry, dir)
+			if err == nil {
+				out <- *fi
+			}
 		}
 
-		// this is the holder file created by mkdir, so we ignore it
-		if strings.HasSuffix(entry.Key, ".go-cloud") {
-			continue
-		} else if entry.Key == "/" {
-			continue
-		}
-
-		isDir := strings.HasSuffix(entry.Key, "/")
-		path := strings.TrimSuffix(entry.Key, "/")
-
-		out.Files = append(out.Files, storage.FileInfo{
-			Name:      strings.TrimPrefix(path, dir),
-			FullPath:  path,
-			MimeType:  entry.ContentType,
-			UpdatedAt: entry.LastModified,
-			Size:      uint64(entry.Size),
-			Directory: isDir,
-		})
-	}
+		close(out)
+	}(out, ch)
 
 	return out, nil
 }

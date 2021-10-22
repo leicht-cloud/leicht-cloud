@@ -26,8 +26,10 @@ func (h *listHandler) Serve(user *models.User, w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	err = json.NewEncoder(w).Encode(files)
-	if err != nil {
-		logrus.Errorf("Error %s while encoding json", err)
+	for file := range files {
+		err = json.NewEncoder(w).Encode(file)
+		if err != nil {
+			logrus.Errorf("Error %s while encoding json", err)
+		}
 	}
 }
