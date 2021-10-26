@@ -1,4 +1,8 @@
+stages:
+  - test
+
 test:
+  stage: test
   image: golang:latest
   before_script:
     - apt-get update && apt-get install -y protobuf-compiler
@@ -12,6 +16,7 @@ test:
     - go test -v -cover ./...
 
 golangci-linter:
+  stage: test
   image:
     name: golangci/golangci-lint:latest
     entrypoint: [""]
@@ -27,6 +32,7 @@ golangci-linter:
     - golangci-lint run --timeout 1h ./...
 
 build:
+  stage: test
   image: golang:latest
   before_script:
     - apt-get update && apt-get install -y protobuf-compiler
@@ -40,3 +46,8 @@ build:
     - find plugins -type d -mindepth 1 -maxdepth 1 -exec sh -c 'cd ./{} && go build .' \;
   artifacts:
     untracked: true
+
+sast:
+  stage: test
+include:
+- template: Security/SAST.gitlab-ci.yml
