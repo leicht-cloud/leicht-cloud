@@ -1,9 +1,9 @@
 db: test.db
 plugin:
   path:
-    - ./plugins
+    - ./built-plugins
   workdir: /tmp/go-cloud/
 storage:
-  provider: local-storage
+  provider: plugin:minio
   extra:
     path: ./tmp

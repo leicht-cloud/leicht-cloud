@@ -1,4 +1,4 @@
-package plugin
+package namespace
 
 // based on https://github.com/teddyking/ns-process/blob/4.1/rootfs.go
 

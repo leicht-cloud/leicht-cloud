@@ -10,9 +10,12 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"sync"
 	"syscall"
 	"time"
+
+	_ "github.com/schoentoon/go-cloud/pkg/plugin/namespace"
 
 	"github.com/docker/docker/pkg/reexec"
 	"github.com/sirupsen/logrus"
@@ -20,33 +23,35 @@ import (
 )
 
 type Manager struct {
-	path       []string
-	workDir    string
-	namespaced bool
-	plugins    map[string]*exec.Cmd
+	cfg *Config
+
+	plugins map[string]*exec.Cmd
 }
 
 type Config struct {
 	Path       []string `yaml:"path"`
 	WorkDir    string   `yaml:"workdir"`
 	Namespaced *bool    `yaml:"namespaced,omitempty"`
+	Bridge     struct {
+		Enabled   bool   `yaml:"enabled"`
+		Interface string `yaml:"interface"`
+	} `yaml:"bridge"`
 }
 
 func (c *Config) CreateManager() (*Manager, error) {
-	workDir := c.WorkDir
-	err := os.MkdirAll(workDir, 0700)
+	if c.Namespaced == nil {
+		c.Namespaced = new(bool)
+		*c.Namespaced = true
+	}
+
+	err := os.MkdirAll(c.WorkDir, 0700)
 	if err != nil {
 		return nil, err
 	}
-	namespaced := true
-	if c.Namespaced != nil {
-		namespaced = *c.Namespaced
-	}
+
 	return &Manager{
-		path:       c.Path,
-		workDir:    workDir,
-		namespaced: namespaced,
-		plugins:    make(map[string]*exec.Cmd, 0),
+		cfg:     c,
+		plugins: make(map[string]*exec.Cmd, 0),
 	}, nil
 }
 
@@ -70,7 +75,7 @@ func (m *Manager) Close() error {
 
 func (m *Manager) killProcess(name string, plugin *exec.Cmd) error {
 	// remove the unix socket
-	defer os.Remove(filepath.Join(m.workDir, name, "grpc.sock"))
+	defer os.Remove(filepath.Join(m.cfg.WorkDir, name, "grpc.sock"))
 
 	err := plugin.Process.Signal(os.Interrupt)
 	if err != nil {
@@ -103,7 +108,7 @@ const plugin_permissions = 0750
 // assume the binary is called the same as the plugin (it's copied regardless)
 // and the directory has a manifest in it.
 func (m *Manager) prepareDirectory(name string) (*Manifest, error) {
-	workDir := filepath.Join(m.workDir, name)
+	workDir := filepath.Join(m.cfg.WorkDir, name)
 	err := os.MkdirAll(workDir, 0700)
 	if err != nil {
 		return nil, err
@@ -115,7 +120,7 @@ func (m *Manager) prepareDirectory(name string) (*Manifest, error) {
 	// alongside we'll want to implement some form of manifest and
 	// namespace the running plugin process
 
-	for _, path := range m.path {
+	for _, path := range m.cfg.Path {
 		// PLUGIN FILE APPROACH //
 		pluginPath := filepath.Join(path, fmt.Sprintf("%s.plugin", name))
 		f, err := os.Open(pluginPath)
@@ -194,7 +199,7 @@ func (m *Manager) prepareDirectory(name string) (*Manifest, error) {
 }
 
 func (m *Manager) Start(name string) (*grpc.ClientConn, error) {
-	workDir := filepath.Join(m.workDir, name)
+	workDir := filepath.Join(m.cfg.WorkDir, name)
 	manifest, err := m.prepareDirectory(name)
 	if err != nil {
 		return nil, err
@@ -203,8 +208,11 @@ func (m *Manager) Start(name string) (*grpc.ClientConn, error) {
 	// TODO: Fall back to tcp on systems without support for unix sockets?
 	socketFile := filepath.Join(workDir, "grpc.sock")
 
-	if m.namespaced {
+	if *m.cfg.Namespaced {
 		cmd := reexec.Command("pluginNamespace")
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		cmd.Stdin = os.Stdin
 		cmd.Dir = workDir
 		cmd.Env = []string{
 			fmt.Sprintf("PLUGIN=%s", name),
@@ -214,6 +222,7 @@ func (m *Manager) Start(name string) (*grpc.ClientConn, error) {
 				syscall.CLONE_NEWUTS |
 				syscall.CLONE_NEWIPC |
 				syscall.CLONE_NEWPID |
+				syscall.CLONE_NEWNET |
 				syscall.CLONE_NEWUSER,
 			UidMappings: []syscall.SysProcIDMap{
 				{
@@ -231,11 +240,8 @@ func (m *Manager) Start(name string) (*grpc.ClientConn, error) {
 			},
 		}
 
-		// TODO: For now we only move into a network namespace if the plugin is NOT supposed to get any network access
-		// this is mostly because namespaced network requires a bit more setup and some iptables magic to work properly
-		// so for now we just piggyback off the host network instead if a plugin wants network.
-		if !manifest.Permissions.Network {
-			cmd.SysProcAttr.Cloneflags |= syscall.CLONE_NEWNET
+		if manifest.Permissions.Network {
+			cmd.Env = append(cmd.Env, "NETWORK=true")
 		}
 
 		err = cmd.Start()
@@ -243,6 +249,23 @@ func (m *Manager) Start(name string) (*grpc.ClientConn, error) {
 			return nil, err
 		}
 		m.plugins[name] = cmd
+
+		if manifest.Permissions.Network {
+			slirp := exec.Command("slirp4netns",
+				"--enable-sandbox",
+				"--enable-seccomp",
+				"--enable-ipv6",
+				strconv.Itoa(cmd.Process.Pid),
+				"tap0")
+			slirp.Stdout = os.Stdout
+			slirp.Stderr = os.Stderr
+			err = slirp.Start()
+			if err != nil {
+				logrus.Error(err)
+			}
+			// TODO: This is basically a hack, we should abstract this away neatly
+			m.plugins[fmt.Sprintf("%s-slirp4netns", name)] = slirp
+		}
 	} else {
 		cmd := exec.Cmd{
 			Path: filepath.Join(workDir, "plugin"),

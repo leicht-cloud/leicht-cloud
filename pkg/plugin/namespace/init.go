@@ -1,4 +1,4 @@
-package plugin
+package namespace
 
 import (
 	"os"
@@ -20,12 +20,21 @@ func pluginNamespace() {
 		panic(err)
 	}
 
+	network := os.Getenv("NETWORK") != ""
+
 	if err := mountProc(wd); err != nil {
 		panic(err)
 	}
 
 	if err := pivotRoot(wd); err != nil {
 		panic(err)
+	}
+
+	if network {
+		waitForNetwork()
+		if err := setupNetwork(); err != nil {
+			panic(err)
+		}
 	}
 
 	cmd := exec.Command("/plugin")
