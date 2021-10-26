@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -96,6 +97,31 @@ func (m *Manager) killProcess(name string, plugin *exec.Cmd) error {
 		return err
 	case <-time.After(time.Second * 10):
 		return plugin.Process.Kill()
+	}
+}
+
+func (m *Manager) waitForSocket(socketFile string) error {
+	maxWait := time.Second * 3
+	checkInterval := time.Second
+	timeStarted := time.Now()
+
+	for {
+		fi, err := os.Stat(socketFile)
+		if err != nil {
+			if os.IsNotExist(err) {
+				if time.Since(timeStarted) > maxWait {
+					return fmt.Errorf("Timeout after %s waiting for network", maxWait)
+				}
+
+				time.Sleep(checkInterval)
+				continue
+			}
+			return err
+		}
+		if fi.Mode().Type() == os.ModeSocket {
+			return nil
+		}
+		return fmt.Errorf("%s is not a unix socket??", socketFile)
 	}
 }
 
@@ -281,8 +307,20 @@ func (m *Manager) Start(name string) (*grpc.ClientConn, error) {
 		m.plugins[name] = &cmd
 	}
 
-	return grpc.Dial(fmt.Sprintf("unix://%s", socketFile),
+	err = m.waitForSocket(socketFile)
+	if err != nil {
+		return nil, err
+	}
+
+	return grpc.Dial(socketFile,
 		grpc.WithInsecure(),
 		grpc.WithBlock(),
+		grpc.WithDialer(func(addr string, timeout time.Duration) (net.Conn, error) {
+			conn, err := net.DialTimeout("unix", addr, timeout)
+			if err != nil {
+				logrus.Error(err)
+			}
+			return conn, err
+		}),
 	)
 }
