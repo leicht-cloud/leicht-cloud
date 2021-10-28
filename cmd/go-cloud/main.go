@@ -19,18 +19,23 @@ func main() {
 	var cfgfile = flag.String("config", "config.yml", "Config file location")
 	flag.Parse()
 
-	logrus.SetLevel(logrus.DebugLevel)
-
 	config, err := ReadConfig(*cfgfile)
 	if err != nil {
 		logrus.Fatal(err)
 	}
 
+	if config.Debug {
+		logrus.SetLevel(logrus.DebugLevel)
+		logrus.SetReportCaller(true)
+	}
+
+	logrus.Infof("Initialing database: %+v", config.DB)
 	db, err := gorm.Open(sqlite.Open(config.DB), &gorm.Config{})
 	if err != nil {
 		logrus.Fatal(err)
 	}
 
+	logrus.Info("Updating database models")
 	err = models.InitModels(db)
 	if err != nil {
 		logrus.Fatal(err)
@@ -38,12 +43,14 @@ func main() {
 
 	auth := auth.NewProvider(db)
 
+	logrus.Info("Initialing plugin manager")
 	pluginManager, err := config.Plugin.CreateManager()
 	if err != nil {
 		logrus.Fatal(err)
 	}
 	defer pluginManager.Close()
 
+	logrus.Infof("Initialing storage provider %s", config.Storage.Provider)
 	storage, err := config.Storage.CreateProvider(pluginManager)
 	if err != nil {
 		logrus.Fatal(err)
@@ -52,6 +59,7 @@ func main() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 
+	logrus.Info("Initialing http server")
 	server, err := gchttp.InitHttpServer(db, auth, storage)
 	if err != nil {
 		logrus.Fatal(err)
@@ -59,6 +67,7 @@ func main() {
 
 	go func(server *http.Server, ch <-chan os.Signal) {
 		<-c
+		logrus.Info("Closing server")
 		server.Close()
 	}(server, c)
 

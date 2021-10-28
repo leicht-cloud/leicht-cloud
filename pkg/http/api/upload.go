@@ -8,6 +8,7 @@ import (
 	"github.com/schoentoon/go-cloud/pkg/auth"
 	"github.com/schoentoon/go-cloud/pkg/models"
 	"github.com/schoentoon/go-cloud/pkg/storage"
+	"github.com/sirupsen/logrus"
 )
 
 type uploadHandler struct {
@@ -34,6 +35,7 @@ func (h *uploadHandler) Serve(user *models.User, w http.ResponseWriter, r *http.
 
 	f, err := h.Storage.File(r.Context(), user, path.Join("/", header.Filename))
 	if err != nil {
+		logrus.Error(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -41,6 +43,7 @@ func (h *uploadHandler) Serve(user *models.User, w http.ResponseWriter, r *http.
 	defer f.Close()
 	_, err = io.Copy(f, file)
 	if err != nil {
+		logrus.Error(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

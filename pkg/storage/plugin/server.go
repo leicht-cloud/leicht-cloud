@@ -15,6 +15,10 @@ import (
 
 // This is meant to be called in the main() of your plugin
 func Start(storage storage.StorageProvider) (err error) {
+	if os.Getenv("DEBUG") != "" {
+		logrus.SetLevel(logrus.DebugLevel)
+		logrus.SetReportCaller(true)
+	}
 	var lis net.Listener
 	port := os.Getenv("PORT")
 	unixSocket := os.Getenv("UNIXSOCKET")
@@ -23,7 +27,7 @@ func Start(storage storage.StorageProvider) (err error) {
 	} else if port != "" {
 		lis, err = net.Listen("tcp", fmt.Sprintf("127.0.0.1:%s", port))
 	} else {
-		logrus.Fatalf("Neither PORT or UNIXSOCKET is specified")
+		logrus.Fatal("Neither PORT or UNIXSOCKET is specified")
 	}
 	if err != nil {
 		return err

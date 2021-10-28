@@ -30,6 +30,7 @@ type Manager struct {
 }
 
 type Config struct {
+	Debug      bool     `yaml:"debug"`
 	Path       []string `yaml:"path"`
 	WorkDir    string   `yaml:"workdir"`
 	Namespaced *bool    `yaml:"namespaced,omitempty"`
@@ -243,6 +244,9 @@ func (m *Manager) Start(name string) (*grpc.ClientConn, error) {
 		cmd.Env = []string{
 			fmt.Sprintf("PLUGIN=%s", name),
 		}
+		if m.cfg.Debug {
+			cmd.Env = append(cmd.Env, "DEBUG=true")
+		}
 		cmd.SysProcAttr = &syscall.SysProcAttr{
 			Cloneflags: syscall.CLONE_NEWNS |
 				syscall.CLONE_NEWUTS |
@@ -299,6 +303,9 @@ func (m *Manager) Start(name string) (*grpc.ClientConn, error) {
 				fmt.Sprintf("UNIXSOCKET=%s", socketFile),
 				fmt.Sprintf("PLUGIN=%s", name),
 			},
+		}
+		if m.cfg.Debug {
+			cmd.Env = append(cmd.Env, "DEBUG=true")
 		}
 		err = cmd.Start()
 		if err != nil {

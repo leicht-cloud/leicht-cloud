@@ -1,9 +1,11 @@
+debug: true
 db: test.db
 plugin:
+  debug: true
   path:
     - ./built-plugins
   workdir: /tmp/go-cloud/
 storage:
-  provider: plugin:minio
+  provider: plugin:local-storage
   extra:
     path: ./tmp
