@@ -19,9 +19,17 @@ func TestPlugins(t *testing.T) {
 	assert.NoError(t, err)
 
 	cfg := plugin.Config{
-		Path:    []string{"."},
-		WorkDir: t.TempDir(),
+		Path:       []string{"."},
+		WorkDir:    t.TempDir(),
+		Namespaced: new(bool),
 	}
+	*cfg.Namespaced = true
+
+	// inside CI we will NOT run namespaced, as it means we're probably running inside docker
+	if os.Getenv("CI") != "" {
+		*cfg.Namespaced = false
+	}
+
 	pluginManager, err := cfg.CreateManager()
 	assert.NoError(t, err)
 	defer pluginManager.Close()

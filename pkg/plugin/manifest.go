@@ -18,8 +18,13 @@ var (
 )
 
 type Manifest struct {
-	Name string `yaml:"name"`
-	Type string `yaml:"type"`
+	Name        string      `yaml:"name"`
+	Type        string      `yaml:"type"`
+	Permissions Permissions `yaml:"permissions"`
+}
+
+type Permissions struct {
+	Network bool `yaml:"network"`
 }
 
 // path should be the path to the plugin, not directly to the manifest

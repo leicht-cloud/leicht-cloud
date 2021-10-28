@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"os/signal"
 
 	"github.com/schoentoon/go-cloud/pkg/storage"
 	"github.com/sirupsen/logrus"
@@ -29,9 +30,19 @@ func Start(storage storage.StorageProvider) (err error) {
 	}
 	logrus.Infof("Listening for grpc on %s\n", lis.Addr())
 
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+
 	server := grpc.NewServer(
 		grpc.MaxRecvMsgSize(1024 * 1024 * 32),
 	)
+
+	go func(server *grpc.Server, ch <-chan os.Signal) {
+		<-c
+		server.Stop()
+		os.Exit(0)
+	}(server, c)
+
 	RegisterStorageProviderServer(server, NewStorageBridge(storage))
 	return server.Serve(lis)
 }

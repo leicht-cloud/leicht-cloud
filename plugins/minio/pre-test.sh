@@ -7,6 +7,11 @@ if ! [ -x "$(command -v docker)" ]; then
     exit 1
 fi
 
+if ! [ -x "$(command -v curl)" ]; then
+    echo "curl command could not be found, skipping"
+    exit 1
+fi
+
 
 docker run -d \
     --name minio_test \
@@ -16,3 +21,7 @@ docker run -d \
     -v "$TMPDIR:/data" \
     -u "$(id -u):$(id -g)" \
     minio/minio:latest server /data
+
+while ! curl http://127.0.0.1:9000/ > /dev/null 2>&1; do
+  sleep 1
+done

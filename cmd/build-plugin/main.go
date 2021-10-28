@@ -98,8 +98,8 @@ func buildPlugin(path string, tw *tar.Writer, goos, goarch string, debug bool) e
 	logrus.Infof("Building %s", filename)
 
 	// TODO: Add support for non-golang plugins?
-	cmd := exec.Command("go", "build")
-	if debug {
+	cmd := exec.Command("go", "build", "-a", "-ldflags", "-extldflags -static")
+	if !debug {
 		cmd.Args = append(cmd.Args, "-ldflags=-s -w")
 	}
 	cmd.Args = append(cmd.Args, "-o", filename, "./...")
@@ -108,6 +108,7 @@ func buildPlugin(path string, tw *tar.Writer, goos, goarch string, debug bool) e
 	cmd.Env = append(os.Environ(),
 		fmt.Sprintf("GOOS=%s", goos),
 		fmt.Sprintf("GOARCH=%s", goarch),
+		"CGO_ENABLED=0",
 	)
 
 	err := cmd.Run()

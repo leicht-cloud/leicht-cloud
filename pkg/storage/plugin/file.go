@@ -77,7 +77,7 @@ func (f *File) readTilEOF(p []byte) (int, error) {
 }
 
 func (f *File) Close() (err error) {
-	logrus.Debugf("Close()")
+	logrus.Debugf("f.Close()")
 	if f.reader != nil {
 		err = f.reader.CloseSend()
 	}
@@ -91,7 +91,7 @@ func (f *File) Close() (err error) {
 }
 
 func (f *File) Write(p []byte) (int, error) {
-	logrus.Debugf("Write([]byte len(%d))", len(p))
+	logrus.Debugf("f.Write([]byte len(%d))", len(p))
 	if f.reader != nil {
 		return 0, errors.New("File is already opened in read mode")
 	}
@@ -105,8 +105,12 @@ func (f *File) Write(p []byte) (int, error) {
 
 	reply, err := f.Storage.Client.WriteFile(context.TODO(), query)
 	if err != nil {
-		logrus.Debugf("f.writer.Send error: %s", err)
+		logrus.Debugf("f.Storage.Client.WriteFile error: %s", err)
 		return 0, err
+	}
+	logrus.Debugf("f.Storage.Client.WriteFile replied with %+v", reply)
+	if reply.GetError().GetMessage() != "" {
+		return 0, errors.New(reply.GetError().GetMessage())
 	}
 
 	return int(reply.SizeWritten), nil

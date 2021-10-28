@@ -1,2 +1,4 @@
 name: minio
 type: storage
+permissions:
+  network: true

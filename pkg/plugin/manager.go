@@ -6,56 +6,123 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
+	"sync"
+	"syscall"
+	"time"
 
+	_ "github.com/schoentoon/go-cloud/pkg/plugin/namespace"
+
+	"github.com/docker/docker/pkg/reexec"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 )
 
 type Manager struct {
-	path    []string
-	workDir string
-	plugins []*exec.Cmd
+	cfg *Config
+
+	plugins map[string]*exec.Cmd
 }
 
 type Config struct {
-	Path    []string `yaml:"path"`
-	WorkDir string   `yaml:"workdir"`
+	Path       []string `yaml:"path"`
+	WorkDir    string   `yaml:"workdir"`
+	Namespaced *bool    `yaml:"namespaced,omitempty"`
+	Bridge     struct {
+		Enabled   bool   `yaml:"enabled"`
+		Interface string `yaml:"interface"`
+	} `yaml:"bridge"`
 }
 
 func (c *Config) CreateManager() (*Manager, error) {
-	workDir := c.WorkDir
-	err := os.MkdirAll(workDir, 0700)
+	if c.Namespaced == nil {
+		c.Namespaced = new(bool)
+		*c.Namespaced = true
+	}
+
+	err := os.MkdirAll(c.WorkDir, 0700)
 	if err != nil {
 		return nil, err
 	}
+
 	return &Manager{
-		path:    c.Path,
-		workDir: workDir,
-		plugins: make([]*exec.Cmd, 0),
+		cfg:     c,
+		plugins: make(map[string]*exec.Cmd, 0),
 	}, nil
 }
 
 func (m *Manager) Close() error {
-	for _, plugin := range m.plugins {
-		err := plugin.Process.Signal(os.Interrupt)
-		if err != nil {
-			logrus.Errorf("Got %s, so killing it instead.", err)
-			err = plugin.Process.Kill()
+	logrus.Info("Closing plugin manager")
+	var wg sync.WaitGroup
+	wg.Add(len(m.plugins))
+	for name, plugin := range m.plugins {
+		go func(wg *sync.WaitGroup, name string, plugin *exec.Cmd) {
+			err := m.killProcess(name, plugin)
 			if err != nil {
-				logrus.Errorf("Error %s while killing process? wtf", err)
+				logrus.Error(err)
 			}
-		}
-		// TODO: We should only wait for a certain time, don't give plugins infinite time to end cleanly
-		err = plugin.Wait()
+			wg.Done()
+		}(&wg, name, plugin)
+	}
+	wg.Wait()
+	logrus.Info("Closed plugin manager")
+	return nil
+}
+
+func (m *Manager) killProcess(name string, plugin *exec.Cmd) error {
+	// remove the unix socket
+	defer os.Remove(filepath.Join(m.cfg.WorkDir, name, "grpc.sock"))
+
+	err := plugin.Process.Signal(os.Interrupt)
+	if err != nil {
+		logrus.Errorf("Got %s, so killing it instead.", err)
+		err = plugin.Process.Kill()
 		if err != nil {
-			logrus.Errorf("Error %s while waiting for %s to end", err, plugin)
+			return err
 		}
 	}
-	return nil
+	c := make(chan error, 1)
+	defer close(c)
+	go func(c chan<- error, plugin *exec.Cmd) {
+		c <- plugin.Wait()
+	}(c, plugin)
+
+	select {
+	case err = <-c:
+		return err
+	case <-time.After(time.Second * 10):
+		return plugin.Process.Kill()
+	}
+}
+
+func (m *Manager) waitForSocket(socketFile string) error {
+	maxWait := time.Second * 3
+	checkInterval := time.Second
+	timeStarted := time.Now()
+
+	for {
+		fi, err := os.Stat(socketFile)
+		if err != nil {
+			if os.IsNotExist(err) {
+				if time.Since(timeStarted) > maxWait {
+					return fmt.Errorf("Timeout after %s waiting for network", maxWait)
+				}
+
+				time.Sleep(checkInterval)
+				continue
+			}
+			return err
+		}
+		if fi.Mode().Type() == os.ModeSocket {
+			return nil
+		}
+		return fmt.Errorf("%s is not a unix socket??", socketFile)
+	}
 }
 
 const plugin_permissions = 0750
@@ -66,9 +133,8 @@ const plugin_permissions = 0750
 // We do however also support running against a directory directly, this does
 // assume the binary is called the same as the plugin (it's copied regardless)
 // and the directory has a manifest in it.
-// TODO: run the plugin in namespaces and have said working directory actually be their root
 func (m *Manager) prepareDirectory(name string) (*Manifest, error) {
-	workDir := filepath.Join(m.workDir, name)
+	workDir := filepath.Join(m.cfg.WorkDir, name)
 	err := os.MkdirAll(workDir, 0700)
 	if err != nil {
 		return nil, err
@@ -80,7 +146,7 @@ func (m *Manager) prepareDirectory(name string) (*Manifest, error) {
 	// alongside we'll want to implement some form of manifest and
 	// namespace the running plugin process
 
-	for _, path := range m.path {
+	for _, path := range m.cfg.Path {
 		// PLUGIN FILE APPROACH //
 		pluginPath := filepath.Join(path, fmt.Sprintf("%s.plugin", name))
 		f, err := os.Open(pluginPath)
@@ -159,8 +225,8 @@ func (m *Manager) prepareDirectory(name string) (*Manifest, error) {
 }
 
 func (m *Manager) Start(name string) (*grpc.ClientConn, error) {
-	workDir := filepath.Join(m.workDir, name)
-	_, err := m.prepareDirectory(name)
+	workDir := filepath.Join(m.cfg.WorkDir, name)
+	manifest, err := m.prepareDirectory(name)
 	if err != nil {
 		return nil, err
 	}
@@ -168,17 +234,93 @@ func (m *Manager) Start(name string) (*grpc.ClientConn, error) {
 	// TODO: Fall back to tcp on systems without support for unix sockets?
 	socketFile := filepath.Join(workDir, "grpc.sock")
 
-	cmd := exec.Cmd{
-		Path: filepath.Join(workDir, "plugin"),
-		Env:  []string{fmt.Sprintf("UNIXSOCKET=%s", socketFile)},
+	if *m.cfg.Namespaced {
+		cmd := reexec.Command("pluginNamespace")
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		cmd.Stdin = os.Stdin
+		cmd.Dir = workDir
+		cmd.Env = []string{
+			fmt.Sprintf("PLUGIN=%s", name),
+		}
+		cmd.SysProcAttr = &syscall.SysProcAttr{
+			Cloneflags: syscall.CLONE_NEWNS |
+				syscall.CLONE_NEWUTS |
+				syscall.CLONE_NEWIPC |
+				syscall.CLONE_NEWPID |
+				syscall.CLONE_NEWNET |
+				syscall.CLONE_NEWUSER,
+			UidMappings: []syscall.SysProcIDMap{
+				{
+					ContainerID: 0,
+					HostID:      os.Getuid(),
+					Size:        1,
+				},
+			},
+			GidMappings: []syscall.SysProcIDMap{
+				{
+					ContainerID: 0,
+					HostID:      os.Getgid(),
+					Size:        1,
+				},
+			},
+		}
+
+		if manifest.Permissions.Network {
+			cmd.Env = append(cmd.Env, "NETWORK=true")
+		}
+
+		err = cmd.Start()
+		if err != nil {
+			return nil, err
+		}
+		m.plugins[name] = cmd
+
+		if manifest.Permissions.Network {
+			slirp := exec.Command("slirp4netns",
+				"--enable-sandbox",
+				"--enable-seccomp",
+				"--enable-ipv6",
+				strconv.Itoa(cmd.Process.Pid),
+				"tap0")
+			slirp.Stdout = os.Stdout
+			slirp.Stderr = os.Stderr
+			err = slirp.Start()
+			if err != nil {
+				logrus.Error(err)
+			}
+			// TODO: This is basically a hack, we should abstract this away neatly
+			m.plugins[fmt.Sprintf("%s-slirp4netns", name)] = slirp
+		}
+	} else {
+		cmd := exec.Cmd{
+			Path: filepath.Join(workDir, "plugin"),
+			Env: []string{
+				fmt.Sprintf("UNIXSOCKET=%s", socketFile),
+				fmt.Sprintf("PLUGIN=%s", name),
+			},
+		}
+		err = cmd.Start()
+		if err != nil {
+			return nil, err
+		}
+		m.plugins[name] = &cmd
 	}
-	err = cmd.Start()
+
+	err = m.waitForSocket(socketFile)
 	if err != nil {
 		return nil, err
 	}
 
-	return grpc.Dial(fmt.Sprintf("unix://%s", socketFile),
+	return grpc.Dial(socketFile,
 		grpc.WithInsecure(),
 		grpc.WithBlock(),
+		grpc.WithDialer(func(addr string, timeout time.Duration) (net.Conn, error) {
+			conn, err := net.DialTimeout("unix", addr, timeout)
+			if err != nil {
+				logrus.Error(err)
+			}
+			return conn, err
+		}),
 	)
 }

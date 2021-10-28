@@ -2,6 +2,9 @@ package main
 
 import (
 	"flag"
+	"net/http"
+	"os"
+	"os/signal"
 
 	"github.com/schoentoon/go-cloud/pkg/auth"
 	gchttp "github.com/schoentoon/go-cloud/pkg/http"
@@ -20,38 +23,47 @@ func main() {
 
 	config, err := ReadConfig(*cfgfile)
 	if err != nil {
-		panic(err)
+		logrus.Fatal(err)
 	}
 
 	db, err := gorm.Open(sqlite.Open(config.DB), &gorm.Config{})
 	if err != nil {
-		panic("failed to connect database")
+		logrus.Fatal(err)
 	}
 
 	err = models.InitModels(db)
 	if err != nil {
-		panic(err)
+		logrus.Fatal(err)
 	}
 
 	auth := auth.NewProvider(db)
 
 	pluginManager, err := config.Plugin.CreateManager()
 	if err != nil {
-		panic(err)
+		logrus.Fatal(err)
 	}
 	defer pluginManager.Close()
 
 	storage, err := config.Storage.CreateProvider(pluginManager)
 	if err != nil {
-		panic(err)
+		logrus.Fatal(err)
 	}
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
 
 	server, err := gchttp.InitHttpServer(db, auth, storage)
 	if err != nil {
-		panic(err)
+		logrus.Fatal(err)
 	}
+
+	go func(server *http.Server, ch <-chan os.Signal) {
+		<-c
+		server.Close()
+	}(server, c)
+
 	err = server.ListenAndServe()
 	if err != nil {
-		panic(err)
+		logrus.Error(err)
 	}
 }
