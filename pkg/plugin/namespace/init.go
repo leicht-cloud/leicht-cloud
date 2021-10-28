@@ -31,7 +31,9 @@ func pluginNamespace() {
 	}
 
 	if network {
-		waitForNetwork()
+		if err := waitForNetwork(); err != nil {
+			panic(err)
+		}
 		if err := setupNetwork(); err != nil {
 			panic(err)
 		}

@@ -3,6 +3,7 @@ package plugin
 import (
 	"archive/tar"
 	"compress/gzip"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -53,7 +54,7 @@ func (c *Config) CreateManager() (*Manager, error) {
 
 	return &Manager{
 		cfg:     c,
-		plugins: make(map[string]*exec.Cmd, 0),
+		plugins: make(map[string]*exec.Cmd),
 	}, nil
 }
 
@@ -322,8 +323,9 @@ func (m *Manager) Start(name string) (*grpc.ClientConn, error) {
 	return grpc.Dial(socketFile,
 		grpc.WithInsecure(),
 		grpc.WithBlock(),
-		grpc.WithDialer(func(addr string, timeout time.Duration) (net.Conn, error) {
-			conn, err := net.DialTimeout("unix", addr, timeout)
+		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
+			var dialer net.Dialer
+			conn, err := dialer.DialContext(ctx, "unix", addr)
 			if err != nil {
 				logrus.Error(err)
 			}
