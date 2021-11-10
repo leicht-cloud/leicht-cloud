@@ -149,3 +149,68 @@ func testFile(t *testing.T, user *models.User, storage StorageProvider, size int
 		return
 	}
 }
+
+func BenchmarkStorageProvider(storage StorageProvider, b *testing.B) {
+	user := &models.User{
+		ID:    1337,
+		Email: "test@test.com",
+	}
+
+	if b.Run("File1KB", func(b *testing.B) { benchmarkFile(b, user, storage, 1024) }) {
+		b.Run("File4KB", func(b *testing.B) { benchmarkFile(b, user, storage, 1024*4) })
+		b.Run("File8KB", func(b *testing.B) { benchmarkFile(b, user, storage, 1024*8) })
+		b.Run("File16KB", func(b *testing.B) { benchmarkFile(b, user, storage, 1024*16) })
+	}
+}
+
+func benchmarkFile(b *testing.B, user *models.User, provider StorageProvider, size int) {
+	buffer := make([]byte, size)
+	n, err := rand.Read(buffer)
+	assert.NoError(b, err)
+	assert.Equal(b, size, n)
+	filename := fmt.Sprintf("file-%d", size)
+	defer provider.Delete(context.Background(), user, filename)
+
+	assert.NoError(b, provider.InitUser(context.Background(), user))
+
+	if !b.Run("Write", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			file, err := provider.File(context.Background(), user, filename)
+			if !assert.NoError(b, err) {
+				return
+			}
+
+			n, err := file.Write(buffer)
+			assert.NoError(b, err)
+			assert.Equal(b, size, n)
+			b.SetBytes(int64(n))
+
+			assert.NoError(b, file.Close())
+		}
+	}) {
+		return
+	}
+
+	if !b.Run("Read", func(b *testing.B) {
+		buf := make([]byte, size)
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			file, err := provider.File(context.Background(), user, filename)
+			if !assert.NoError(b, err) {
+				return
+			}
+
+			n, err := io.CopyBuffer(io.Discard, file, buf)
+			if err == io.EOF {
+				break
+			}
+			assert.NoError(b, err)
+			b.SetBytes(int64(n))
+
+			assert.NoError(b, file.Close())
+		}
+	}) {
+		return
+	}
+}

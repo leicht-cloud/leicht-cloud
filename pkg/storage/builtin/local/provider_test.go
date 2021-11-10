@@ -7,7 +7,13 @@ import (
 )
 
 func TestLocal(t *testing.T) {
-	provider := &StorageProvider{RootPath: t.TempDir()}
+	provider := NewStorageProvider(t.TempDir())
 
 	storage.TestStorageProvider(provider, t)
+}
+
+func BenchmarkLocal(b *testing.B) {
+	provider := NewStorageProvider(b.TempDir())
+
+	storage.BenchmarkStorageProvider(provider, b)
 }

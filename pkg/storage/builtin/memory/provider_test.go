@@ -11,3 +11,9 @@ func TestMemory(t *testing.T) {
 
 	storage.TestStorageProvider(provider, t)
 }
+
+func BenchmarkMemory(b *testing.B) {
+	provider := NewStorageProvider()
+
+	storage.BenchmarkStorageProvider(provider, b)
+}

@@ -325,11 +325,7 @@ func (m *Manager) Start(name string) (*grpc.ClientConn, error) {
 		grpc.WithBlock(),
 		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
 			var dialer net.Dialer
-			conn, err := dialer.DialContext(ctx, "unix", addr)
-			if err != nil {
-				logrus.Error(err)
-			}
-			return conn, err
+			return dialer.DialContext(ctx, "unix", addr)
 		}),
 	)
 }
