@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/schoentoon/go-cloud/pkg/storage/local"
+	"github.com/schoentoon/go-cloud/pkg/storage/builtin/local"
 	"github.com/schoentoon/go-cloud/pkg/storage/plugin"
 )
 
