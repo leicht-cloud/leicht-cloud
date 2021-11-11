@@ -117,14 +117,30 @@ func (s *GrpcStorage) ListDirectory(ctx context.Context, user *models.User, path
 		return nil, err
 	}
 
-	out := make(chan storage.FileInfo)
+	out := make(chan storage.FileInfo, 1)
+
+	reply, err := dir.Recv()
+	if err != nil {
+		return nil, err
+	} else {
+		out <- storage.FileInfo{
+			Name:      reply.Name,
+			FullPath:  reply.FullPath,
+			MimeType:  reply.MimeType,
+			CreatedAt: time.Unix(int64(reply.CreatedAt), 0),
+			UpdatedAt: time.Unix(int64(reply.UpdatedAt), 0),
+			Size:      reply.Size,
+		}
+	}
 
 	go func(out chan<- storage.FileInfo) {
 		for {
 			reply, err := dir.Recv()
 			if err == io.EOF {
-				close(out)
-				return
+				break
+			} else if err != nil {
+				logrus.Error(err)
+				break
 			}
 
 			out <- storage.FileInfo{
@@ -136,6 +152,8 @@ func (s *GrpcStorage) ListDirectory(ctx context.Context, user *models.User, path
 				Size:      reply.Size,
 			}
 		}
+
+		close(out)
 	}(out)
 
 	return out, nil
