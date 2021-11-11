@@ -156,7 +156,6 @@ func (s *GrpcStorage) ListDirectory(ctx context.Context, user *models.User, path
 }
 
 func (s *GrpcStorage) File(ctx context.Context, user *models.User, fullpath string) (storage.File, error) {
-	logrus.Debugf("File(%d, %s)", user.ID, fullpath)
 	reply, err := s.Client.OpenFile(ctx,
 		&OpenFileQuery{
 			User: &User{
@@ -175,12 +174,9 @@ func (s *GrpcStorage) File(ctx context.Context, user *models.User, fullpath stri
 		Id:      reply.Id,
 	}
 
-	logrus.Debugf("Opened %s for %d with id %d", fullpath, user.ID, reply.Id)
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 	s.openFiles[reply.Id] = file
-
-	logrus.Debugf("%+v", s.openFiles)
 
 	return file, nil
 }

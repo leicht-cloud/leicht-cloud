@@ -140,15 +140,12 @@ func (s *BridgeStorageProviderServer) OpenFile(ctx context.Context, req *OpenFil
 	s.nextID++
 	s.openFiles[s.nextID] = file
 
-	logrus.Debugf("%+v", s.openFiles)
-
 	return &OpenFileReply{
 		Id: s.nextID,
 	}, nil
 }
 
 func (s *BridgeStorageProviderServer) getFile(id int32) (storage.File, error) {
-	logrus.Debugf("getFile(%d)", id)
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
 
@@ -181,8 +178,6 @@ func (s *BridgeStorageProviderServer) CloseFile(ctx context.Context, req *CloseF
 }
 
 func (s *BridgeStorageProviderServer) WriteFile(ctx context.Context, req *WriteFileQuery) (*WriteFileReply, error) {
-	logrus.Debugf("%+v.WriteFile(%+v)", s, req)
-
 	file, err := s.getFile(req.GetId())
 	if err != nil {
 		return &WriteFileReply{
