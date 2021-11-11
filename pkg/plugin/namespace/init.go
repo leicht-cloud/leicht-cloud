@@ -43,6 +43,11 @@ func pluginNamespace() {
 			panic(err)
 		}
 
+		err = ifce.SetupNetwork()
+		if err != nil {
+			panic(err)
+		}
+
 		go ifce.ReadLoop()
 		go ifce.WriteLoop()
 	}
