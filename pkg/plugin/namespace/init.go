@@ -5,6 +5,7 @@ import (
 	"os/exec"
 
 	"github.com/docker/docker/pkg/reexec"
+	"github.com/schoentoon/nsnet/pkg/container"
 )
 
 func init() {
@@ -26,17 +27,24 @@ func pluginNamespace() {
 		panic(err)
 	}
 
+	if network {
+		if err := container.MountTunDev(wd); err != nil {
+			panic(err)
+		}
+	}
+
 	if err := pivotRoot(wd); err != nil {
 		panic(err)
 	}
 
 	if network {
-		if err := waitForNetwork(); err != nil {
+		ifce, err := container.New()
+		if err != nil {
 			panic(err)
 		}
-		if err := setupNetwork(); err != nil {
-			panic(err)
-		}
+
+		go ifce.ReadLoop()
+		go ifce.WriteLoop()
 	}
 
 	cmd := exec.Command("/plugin")

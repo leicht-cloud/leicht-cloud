@@ -9,32 +9,34 @@ import (
 	"time"
 
 	"github.com/docker/docker/pkg/reexec"
+	"github.com/schoentoon/nsnet/pkg/host"
 )
 
 const processKillTimeout = time.Second * 10
 
 type plugin struct {
 	workDir string
-	process *exec.Cmd
+	cmd     *exec.Cmd
+
+	nic *host.TunDevice
 }
 
 func newPluginInstance(manifest *Manifest, cfg *Config, name string) (*plugin, error) {
-	out := &plugin{
+	p := &plugin{
 		workDir: filepath.Join(cfg.WorkDir, name),
 	}
 	if *cfg.Namespaced {
-		cmd := reexec.Command("pluginNamespace")
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		cmd.Stdin = os.Stdin
-		cmd.Dir = out.workDir
-		cmd.Env = []string{
+		p.cmd = reexec.Command("pluginNamespace")
+		p.cmd.Stdout = os.Stdout
+		p.cmd.Stderr = os.Stderr
+		p.cmd.Dir = p.workDir
+		p.cmd.Env = []string{
 			fmt.Sprintf("PLUGIN=%s", name),
 		}
 		if cfg.Debug {
-			cmd.Env = append(cmd.Env, "DEBUG=true")
+			p.cmd.Env = append(p.cmd.Env, "DEBUG=true")
 		}
-		cmd.SysProcAttr = &syscall.SysProcAttr{
+		p.cmd.SysProcAttr = &syscall.SysProcAttr{
 			Cloneflags: syscall.CLONE_NEWNS |
 				syscall.CLONE_NEWUTS |
 				syscall.CLONE_NEWIPC |
@@ -58,17 +60,19 @@ func newPluginInstance(manifest *Manifest, cfg *Config, name string) (*plugin, e
 		}
 
 		if manifest.Permissions.Network {
-			cmd.Env = append(cmd.Env, "NETWORK=true")
-		}
+			p.cmd.Env = append(p.cmd.Env, "NETWORK=true")
 
-		if manifest.Permissions.Network {
-			// TODO: This is basically a hack, we should abstract this away neatly
+			tun, err := host.New(host.DefaultOptions())
+			if err != nil {
+				return nil, err
+			}
+			tun.AttachToCmd(p.cmd)
 		}
 	} else {
 		cmd := exec.Cmd{
-			Path: filepath.Join(out.workDir, "plugin"),
+			Path: filepath.Join(p.workDir, "plugin"),
 			Env: []string{
-				fmt.Sprintf("UNIXSOCKET=%s", out.SocketFile()),
+				fmt.Sprintf("UNIXSOCKET=%s", p.SocketFile()),
 				fmt.Sprintf("PLUGIN=%s", name),
 			},
 		}
@@ -77,7 +81,7 @@ func newPluginInstance(manifest *Manifest, cfg *Config, name string) (*plugin, e
 		}
 	}
 
-	return nil, nil
+	return p, nil
 }
 
 func (p *plugin) SocketFile() string {
@@ -85,16 +89,20 @@ func (p *plugin) SocketFile() string {
 }
 
 func (p *plugin) Start() error {
-	return p.process.Start()
+	return p.cmd.Start()
 }
 
 func (p *plugin) Close() error {
 	// after closing we also remove the socketfile
 	defer os.Remove(p.SocketFile())
 
-	err := p.process.Process.Signal(os.Interrupt)
+	if p.nic != nil {
+		defer p.nic.Close()
+	}
+
+	err := p.cmd.Process.Signal(os.Interrupt)
 	if err != nil {
-		err = p.process.Process.Kill()
+		err = p.cmd.Process.Kill()
 		if err != nil {
 			return err
 		}
@@ -104,13 +112,13 @@ func (p *plugin) Close() error {
 	defer close(c)
 	go func(c chan<- error, process *exec.Cmd) {
 		c <- process.Wait()
-	}(c, p.process)
+	}(c, p.cmd)
 
 	select {
 	case err := <-c:
 		return err
 	case <-time.After(processKillTimeout):
-		return p.process.Process.Kill()
+		return p.cmd.Process.Kill()
 	}
 }
 
@@ -125,7 +133,7 @@ func (p *plugin) waitForSocket() error {
 		if err != nil {
 			if os.IsNotExist(err) {
 				if time.Since(timeStarted) > maxWait {
-					return fmt.Errorf("Timeout after %s waiting for network", maxWait)
+					return fmt.Errorf("Timeout after %s waiting for socket file %s", maxWait, socketFile)
 				}
 
 				time.Sleep(checkInterval)

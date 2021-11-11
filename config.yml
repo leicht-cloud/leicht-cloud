@@ -6,6 +6,10 @@ plugin:
     - ./built-plugins
   workdir: /tmp/go-cloud/
 storage:
-  provider: plugin:local-storage
+  provider: plugin:minio
   extra:
-    path: ./tmp
+    hostname: '192.168.100.124:9000'
+    https: false
+    access_key: go-cloud
+    secret_key: ThisIsASecret
+    prefix: cloud-

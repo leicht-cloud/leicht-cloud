@@ -172,6 +172,11 @@ func (m *Manager) Start(name string) (*grpc.ClientConn, error) {
 		return nil, err
 	}
 
+	err = plugin.Start()
+	if err != nil {
+		return nil, err
+	}
+
 	m.plugins[name] = plugin
 
 	err = plugin.waitForSocket()
