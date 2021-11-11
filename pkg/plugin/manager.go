@@ -323,6 +323,8 @@ func (m *Manager) Start(name string) (*grpc.ClientConn, error) {
 	return grpc.Dial(socketFile,
 		grpc.WithInsecure(),
 		grpc.WithBlock(),
+		grpc.WithReadBufferSize(0),
+		grpc.WithWriteBufferSize(0),
 		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
 			var dialer net.Dialer
 			return dialer.DialContext(ctx, "unix", addr)
