@@ -69,7 +69,7 @@ func newPluginInstance(manifest *Manifest, cfg *Config, name string) (*plugin, e
 			tun.AttachToCmd(p.cmd)
 		}
 	} else {
-		cmd := exec.Cmd{
+		p.cmd = &exec.Cmd{
 			Path: filepath.Join(p.workDir, "plugin"),
 			Env: []string{
 				fmt.Sprintf("UNIXSOCKET=%s", p.SocketFile()),
@@ -77,7 +77,7 @@ func newPluginInstance(manifest *Manifest, cfg *Config, name string) (*plugin, e
 			},
 		}
 		if cfg.Debug {
-			cmd.Env = append(cmd.Env, "DEBUG=true")
+			p.cmd.Env = append(p.cmd.Env, "DEBUG=true")
 		}
 	}
 
