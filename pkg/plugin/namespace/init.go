@@ -6,6 +6,7 @@ import (
 
 	"github.com/docker/docker/pkg/reexec"
 	"github.com/schoentoon/nsnet/pkg/container"
+	"github.com/sirupsen/logrus"
 )
 
 func init() {
@@ -48,8 +49,18 @@ func pluginNamespace() {
 			panic(err)
 		}
 
-		go ifce.ReadLoop()
-		go ifce.WriteLoop()
+		go func(ifce *container.TunDevice) {
+			err := ifce.ReadLoop()
+			if err != nil {
+				logrus.Error(err)
+			}
+		}(ifce)
+		go func(ifce *container.TunDevice) {
+			err := ifce.WriteLoop()
+			if err != nil {
+				logrus.Error(err)
+			}
+		}(ifce)
 	}
 
 	cmd := exec.Command("/plugin")
