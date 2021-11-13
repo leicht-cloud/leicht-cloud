@@ -59,14 +59,26 @@ func newPluginInstance(manifest *Manifest, cfg *Config, name string) (*plugin, e
 			},
 		}
 
+		// in the case of no network permission, we still go into a network namespace
+		// with the difference that we never set up the network
 		if manifest.Permissions.Network {
-			p.cmd.Env = append(p.cmd.Env, "NETWORK=true")
+			p.cmd.Env = append(p.cmd.Env, fmt.Sprintf("NETWORK=%s", cfg.NetworkMode))
 
-			tun, err := host.New(host.DefaultOptions())
-			if err != nil {
-				return nil, err
+			if cfg.NetworkMode == "userspace" {
+				tun, err := host.New(host.DefaultOptions())
+				if err != nil {
+					return nil, err
+				}
+				tun.AttachToCmd(p.cmd)
+
+				p.nic = tun
+			} else if cfg.NetworkMode == "host" {
+				// if our network mode is host, we unset the CLONE_NEWNET flag so our containers run
+				// with the actual host network
+				p.cmd.SysProcAttr.Cloneflags = p.cmd.SysProcAttr.Cloneflags &^ syscall.CLONE_NEWNET
+			} else {
+				panic("we shouldn't be able to reach here")
 			}
-			tun.AttachToCmd(p.cmd)
 		}
 	} else {
 		p.cmd = &exec.Cmd{

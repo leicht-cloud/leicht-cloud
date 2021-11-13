@@ -25,16 +25,30 @@ type Manager struct {
 }
 
 type Config struct {
-	Debug      bool     `yaml:"debug"`
-	Path       []string `yaml:"path"`
-	WorkDir    string   `yaml:"workdir"`
-	Namespaced *bool    `yaml:"namespaced,omitempty"`
+	Debug       bool     `yaml:"debug"`
+	Path        []string `yaml:"path"`
+	WorkDir     string   `yaml:"workdir"`
+	Namespaced  *bool    `yaml:"namespaced,omitempty"`
+	NetworkMode string   `yaml:"network_mode"`
 }
 
 func (c *Config) CreateManager() (*Manager, error) {
 	if c.Namespaced == nil {
 		c.Namespaced = new(bool)
 		*c.Namespaced = true
+	}
+
+	if *c.Namespaced {
+		// we check whether the value in network_mode is valid or not
+		// this however is only relevant if we're actually doing namespacing..
+		switch c.NetworkMode {
+		case "host":
+		case "userspace":
+		case "": // we default to userspace in case it's empty
+			c.NetworkMode = "userspace"
+		default:
+			return nil, fmt.Errorf("Invalid network mode: %s", c.NetworkMode)
+		}
 	}
 
 	err := os.MkdirAll(c.WorkDir, 0700)

@@ -22,13 +22,13 @@ func pluginNamespace() {
 		panic(err)
 	}
 
-	network := os.Getenv("NETWORK") != ""
+	network := os.Getenv("NETWORK")
 
 	if err := mountProc(wd); err != nil {
 		panic(err)
 	}
 
-	if network {
+	if network == "userspace" {
 		if err := container.MountTunDev(wd); err != nil {
 			panic(err)
 		}
@@ -38,7 +38,7 @@ func pluginNamespace() {
 		panic(err)
 	}
 
-	if network {
+	if network == "userspace" {
 		ifce, err := container.New()
 		if err != nil {
 			panic(err)

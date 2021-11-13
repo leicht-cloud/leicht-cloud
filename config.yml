@@ -5,6 +5,8 @@ plugin:
   path:
     - ./built-plugins
   workdir: /tmp/go-cloud/
+  namespaced: true
+  network_mode: "host"
 storage:
   provider: plugin:minio
   extra:
