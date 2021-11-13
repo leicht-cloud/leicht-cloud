@@ -12,6 +12,11 @@ if ! [ -x "$(command -v curl)" ]; then
     exit 1
 fi
 
+if [ -z $TMPDIR ]; then
+    echo "no TMPDIR set, skipping.."
+    exit 1
+fi
+
 
 docker run -d \
     --name minio_test \

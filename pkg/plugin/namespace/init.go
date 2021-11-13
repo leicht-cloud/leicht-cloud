@@ -5,6 +5,8 @@ import (
 	"os/exec"
 
 	"github.com/docker/docker/pkg/reexec"
+	"github.com/schoentoon/nsnet/pkg/container"
+	"github.com/sirupsen/logrus"
 )
 
 func init() {
@@ -20,23 +22,45 @@ func pluginNamespace() {
 		panic(err)
 	}
 
-	network := os.Getenv("NETWORK") != ""
+	network := os.Getenv("NETWORK")
 
 	if err := mountProc(wd); err != nil {
 		panic(err)
+	}
+
+	if network == "userspace" {
+		if err := container.MountTunDev(wd); err != nil {
+			panic(err)
+		}
 	}
 
 	if err := pivotRoot(wd); err != nil {
 		panic(err)
 	}
 
-	if network {
-		if err := waitForNetwork(); err != nil {
+	if network == "userspace" {
+		ifce, err := container.New()
+		if err != nil {
 			panic(err)
 		}
-		if err := setupNetwork(); err != nil {
+
+		err = ifce.SetupNetwork()
+		if err != nil {
 			panic(err)
 		}
+
+		go func(ifce *container.TunDevice) {
+			err := ifce.ReadLoop()
+			if err != nil {
+				logrus.Error(err)
+			}
+		}(ifce)
+		go func(ifce *container.TunDevice) {
+			err := ifce.WriteLoop()
+			if err != nil {
+				logrus.Error(err)
+			}
+		}(ifce)
 	}
 
 	cmd := exec.Command("/plugin")

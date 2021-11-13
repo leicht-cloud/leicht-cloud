@@ -9,17 +9,11 @@ import (
 	"io"
 	"net"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
-	"strconv"
-	"sync"
-	"syscall"
-	"time"
 
 	_ "github.com/schoentoon/go-cloud/pkg/plugin/namespace"
 
-	"github.com/docker/docker/pkg/reexec"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 )
@@ -27,24 +21,34 @@ import (
 type Manager struct {
 	cfg *Config
 
-	plugins map[string]*exec.Cmd
+	plugins map[string]*plugin
 }
 
 type Config struct {
-	Debug      bool     `yaml:"debug"`
-	Path       []string `yaml:"path"`
-	WorkDir    string   `yaml:"workdir"`
-	Namespaced *bool    `yaml:"namespaced,omitempty"`
-	Bridge     struct {
-		Enabled   bool   `yaml:"enabled"`
-		Interface string `yaml:"interface"`
-	} `yaml:"bridge"`
+	Debug       bool     `yaml:"debug"`
+	Path        []string `yaml:"path"`
+	WorkDir     string   `yaml:"workdir"`
+	Namespaced  *bool    `yaml:"namespaced,omitempty"`
+	NetworkMode string   `yaml:"network_mode"`
 }
 
 func (c *Config) CreateManager() (*Manager, error) {
 	if c.Namespaced == nil {
 		c.Namespaced = new(bool)
 		*c.Namespaced = true
+	}
+
+	if *c.Namespaced {
+		// we check whether the value in network_mode is valid or not
+		// this however is only relevant if we're actually doing namespacing..
+		switch c.NetworkMode {
+		case "host":
+		case "userspace":
+		case "": // we default to userspace in case it's empty
+			c.NetworkMode = "userspace"
+		default:
+			return nil, fmt.Errorf("Invalid network mode: %s", c.NetworkMode)
+		}
 	}
 
 	err := os.MkdirAll(c.WorkDir, 0700)
@@ -54,77 +58,22 @@ func (c *Config) CreateManager() (*Manager, error) {
 
 	return &Manager{
 		cfg:     c,
-		plugins: make(map[string]*exec.Cmd),
+		plugins: make(map[string]*plugin),
 	}, nil
 }
 
 func (m *Manager) Close() error {
 	logrus.Info("Closing plugin manager")
-	var wg sync.WaitGroup
-	wg.Add(len(m.plugins))
 	for name, plugin := range m.plugins {
-		go func(wg *sync.WaitGroup, name string, plugin *exec.Cmd) {
-			err := m.killProcess(name, plugin)
-			if err != nil {
-				logrus.Error(err)
-			}
-			wg.Done()
-		}(&wg, name, plugin)
+		logrus.Infof("Closing %s", name)
+		err := plugin.Close()
+		if err != nil {
+			logrus.Error(err)
+		}
+		logrus.Infof("Closed %s", name)
 	}
-	wg.Wait()
 	logrus.Info("Closed plugin manager")
 	return nil
-}
-
-func (m *Manager) killProcess(name string, plugin *exec.Cmd) error {
-	// remove the unix socket
-	defer os.Remove(filepath.Join(m.cfg.WorkDir, name, "grpc.sock"))
-
-	err := plugin.Process.Signal(os.Interrupt)
-	if err != nil {
-		logrus.Errorf("Got %s, so killing it instead.", err)
-		err = plugin.Process.Kill()
-		if err != nil {
-			return err
-		}
-	}
-	c := make(chan error, 1)
-	defer close(c)
-	go func(c chan<- error, plugin *exec.Cmd) {
-		c <- plugin.Wait()
-	}(c, plugin)
-
-	select {
-	case err = <-c:
-		return err
-	case <-time.After(time.Second * 10):
-		return plugin.Process.Kill()
-	}
-}
-
-func (m *Manager) waitForSocket(socketFile string) error {
-	maxWait := time.Second * 3
-	checkInterval := time.Second
-	timeStarted := time.Now()
-
-	for {
-		fi, err := os.Stat(socketFile)
-		if err != nil {
-			if os.IsNotExist(err) {
-				if time.Since(timeStarted) > maxWait {
-					return fmt.Errorf("Timeout after %s waiting for network", maxWait)
-				}
-
-				time.Sleep(checkInterval)
-				continue
-			}
-			return err
-		}
-		if fi.Mode().Type() == os.ModeSocket {
-			return nil
-		}
-		return fmt.Errorf("%s is not a unix socket??", socketFile)
-	}
 }
 
 const plugin_permissions = 0750
@@ -227,100 +176,29 @@ func (m *Manager) prepareDirectory(name string) (*Manifest, error) {
 }
 
 func (m *Manager) Start(name string) (*grpc.ClientConn, error) {
-	workDir := filepath.Join(m.cfg.WorkDir, name)
 	manifest, err := m.prepareDirectory(name)
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO: Fall back to tcp on systems without support for unix sockets?
-	socketFile := filepath.Join(workDir, "grpc.sock")
-
-	if *m.cfg.Namespaced {
-		cmd := reexec.Command("pluginNamespace")
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		cmd.Stdin = os.Stdin
-		cmd.Dir = workDir
-		cmd.Env = []string{
-			fmt.Sprintf("PLUGIN=%s", name),
-		}
-		if m.cfg.Debug {
-			cmd.Env = append(cmd.Env, "DEBUG=true")
-		}
-		cmd.SysProcAttr = &syscall.SysProcAttr{
-			Cloneflags: syscall.CLONE_NEWNS |
-				syscall.CLONE_NEWUTS |
-				syscall.CLONE_NEWIPC |
-				syscall.CLONE_NEWPID |
-				syscall.CLONE_NEWNET |
-				syscall.CLONE_NEWUSER,
-			UidMappings: []syscall.SysProcIDMap{
-				{
-					ContainerID: 0,
-					HostID:      os.Getuid(),
-					Size:        1,
-				},
-			},
-			GidMappings: []syscall.SysProcIDMap{
-				{
-					ContainerID: 0,
-					HostID:      os.Getgid(),
-					Size:        1,
-				},
-			},
-		}
-
-		if manifest.Permissions.Network {
-			cmd.Env = append(cmd.Env, "NETWORK=true")
-		}
-
-		err = cmd.Start()
-		if err != nil {
-			return nil, err
-		}
-		m.plugins[name] = cmd
-
-		if manifest.Permissions.Network {
-			slirp := exec.Command("slirp4netns",
-				"--enable-sandbox",
-				"--enable-seccomp",
-				"--enable-ipv6",
-				strconv.Itoa(cmd.Process.Pid),
-				"tap0")
-			slirp.Stdout = os.Stdout
-			slirp.Stderr = os.Stderr
-			err = slirp.Start()
-			if err != nil {
-				logrus.Error(err)
-			}
-			// TODO: This is basically a hack, we should abstract this away neatly
-			m.plugins[fmt.Sprintf("%s-slirp4netns", name)] = slirp
-		}
-	} else {
-		cmd := exec.Cmd{
-			Path: filepath.Join(workDir, "plugin"),
-			Env: []string{
-				fmt.Sprintf("UNIXSOCKET=%s", socketFile),
-				fmt.Sprintf("PLUGIN=%s", name),
-			},
-		}
-		if m.cfg.Debug {
-			cmd.Env = append(cmd.Env, "DEBUG=true")
-		}
-		err = cmd.Start()
-		if err != nil {
-			return nil, err
-		}
-		m.plugins[name] = &cmd
-	}
-
-	err = m.waitForSocket(socketFile)
+	plugin, err := newPluginInstance(manifest, m.cfg, name)
 	if err != nil {
 		return nil, err
 	}
 
-	return grpc.Dial(socketFile,
+	err = plugin.Start()
+	if err != nil {
+		return nil, err
+	}
+
+	m.plugins[name] = plugin
+
+	err = plugin.waitForSocket()
+	if err != nil {
+		return nil, err
+	}
+
+	return grpc.Dial(plugin.SocketFile(),
 		grpc.WithInsecure(),
 		grpc.WithBlock(),
 		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
