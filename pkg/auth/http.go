@@ -24,7 +24,9 @@ type AuthHandlerInterface interface {
 	Serve(user *models.User, w http.ResponseWriter, r *http.Request)
 }
 
-const USER = "user"
+type userKey string
+
+const userKeyValue userKey = "user"
 
 // AuthMiddleware if auth should be optional and you want to do your own thing whenever the user is not logged in, use this
 func AuthMiddleware(authProvider *Provider, handler http.Handler) http.Handler {
@@ -35,12 +37,12 @@ func AuthMiddleware(authProvider *Provider, handler http.Handler) http.Handler {
 			return
 		}
 
-		handler.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), USER, user)))
+		handler.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), userKeyValue, user)))
 	})
 }
 
 func GetUserFromRequest(r *http.Request) *models.User {
-	user := r.Context().Value(USER)
+	user := r.Context().Value(userKeyValue)
 	if user != nil {
 		return user.(*models.User)
 	}
