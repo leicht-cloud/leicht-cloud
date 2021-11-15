@@ -29,6 +29,6 @@ func (h *rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// internal rewrite to the root folder
-	r.URL.Path = "/folder.html"
+	r.URL.Path = "/folder.gohtml"
 	h.StaticHandler.ServeHTTP(w, r)
 }

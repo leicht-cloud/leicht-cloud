@@ -14,11 +14,15 @@ func InitHttpServer(db *gorm.DB, auth *auth.Provider, storage storage.StoragePro
 	if err != nil {
 		return nil, err
 	}
-	staticHandler := http.FileServer(http.FS(assets))
+	//staticHandler := http.FileServer(http.FS(assets))
+	templateHandler, err := NewTemplateHandler(assets)
+	if err != nil {
+		return nil, err
+	}
 
 	mux := http.NewServeMux()
-	mux.Handle("/", &rootHandler{DB: db, Auth: auth, StaticHandler: staticHandler})
-	mux.Handle("/login", &loginHandler{DB: db, Auth: auth, StaticHandler: staticHandler})
+	mux.Handle("/", &rootHandler{DB: db, Auth: auth, StaticHandler: templateHandler})
+	mux.Handle("/login", &loginHandler{DB: db, Auth: auth, StaticHandler: templateHandler})
 	mux.Handle("/signup", &signupHandler{Assets: assets, DB: db, Storage: storage})
 	api.Init(mux, db, auth, storage)
 
