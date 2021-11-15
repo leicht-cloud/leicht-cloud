@@ -9,6 +9,12 @@
         <li class="nav-item">
           <a class="nav-link active" aria-current="page" href="/">Home</a>
         </li>
+        {{ if .Admin }}
+        <li class="nav-item">
+          <a class="nav-link active" aria-current="page" href="/admin">Admin</a>
+        </li>
+        {{ end }}
+      </ul>
     </div>
   </div>
 </nav>

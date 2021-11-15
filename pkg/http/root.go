@@ -12,6 +12,10 @@ type rootHandler struct {
 	StaticHandler http.Handler
 }
 
+type folderTemplateData struct {
+	Navbar NavbarData
+}
+
 func (h *rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
 		h.StaticHandler.ServeHTTP(w, r)
@@ -28,5 +32,12 @@ func (h *rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// internal rewrite to the root folder
 	r.URL.Path = "/folder.gohtml"
-	h.StaticHandler.ServeHTTP(w, r)
+
+	ctx := AttachTemplateData(r.Context(), folderTemplateData{
+		Navbar: NavbarData{
+			Admin: user.Admin,
+		},
+	})
+
+	h.StaticHandler.ServeHTTP(w, r.WithContext(ctx))
 }
