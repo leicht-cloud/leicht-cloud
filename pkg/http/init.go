@@ -14,7 +14,6 @@ func InitHttpServer(db *gorm.DB, auth *auth.Provider, storage storage.StoragePro
 	if err != nil {
 		return nil, err
 	}
-	//staticHandler := http.FileServer(http.FS(assets))
 	templateHandler, err := NewTemplateHandler(assets)
 	if err != nil {
 		return nil, err
