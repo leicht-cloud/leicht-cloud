@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/schoentoon/go-cloud/pkg/auth"
 	"github.com/sirupsen/logrus"
 )
 
@@ -48,13 +49,19 @@ func WithLogging(h http.Handler) http.Handler {
 
 		duration := time.Since(start)
 
-		logrus.WithFields(logrus.Fields{
+		user := auth.GetUserFromRequest(req)
+
+		entry := logrus.WithFields(logrus.Fields{
 			"uri":      req.RequestURI,
 			"method":   req.Method,
 			"status":   responseData.status,
 			"duration": duration,
 			"size":     responseData.size,
-		}).Info("request completed")
+		})
+		if user != nil {
+			entry = entry.WithField("user", user.Email)
+		}
+		entry.Info("request completed")
 	}
 	return http.HandlerFunc(loggingFn)
 }

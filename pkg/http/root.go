@@ -4,13 +4,11 @@ import (
 	"net/http"
 
 	"github.com/schoentoon/go-cloud/pkg/auth"
-
 	"gorm.io/gorm"
 )
 
 type rootHandler struct {
 	DB            *gorm.DB
-	Auth          *auth.Provider
 	StaticHandler http.Handler
 }
 
@@ -20,8 +18,8 @@ func (h *rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := h.Auth.VerifyFromRequest(r)
-	if err != nil {
+	user := auth.GetUserFromRequest(r)
+	if user == nil {
 		// internal we redirect you to signin.html
 		r.URL.Path = "/signin.html"
 		h.StaticHandler.ServeHTTP(w, r)

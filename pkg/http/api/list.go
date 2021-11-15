@@ -15,8 +15,8 @@ type listHandler struct {
 	Storage storage.StorageProvider
 }
 
-func newListHandler(store storage.StorageProvider, authProvider *auth.Provider) http.Handler {
-	return auth.AuthHandler(authProvider, &listHandler{Storage: store})
+func newListHandler(store storage.StorageProvider) http.Handler {
+	return auth.AuthHandler(&listHandler{Storage: store})
 }
 
 func (h *listHandler) Serve(user *models.User, w http.ResponseWriter, r *http.Request) {
