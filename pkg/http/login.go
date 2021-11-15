@@ -16,6 +16,12 @@ type loginHandler struct {
 }
 
 func (h *loginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if auth.GetUserFromRequest(r) != nil {
+		// you're already logged in, lol
+		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+		return
+	}
+
 	if r.Method != http.MethodPost {
 		// internal we redirect you to signin.html
 		r.URL.Path = "/signin.html"
