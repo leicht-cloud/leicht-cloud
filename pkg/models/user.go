@@ -7,4 +7,5 @@ type User struct {
 	Email        string `gorm:"index:idx_email,unique"`
 	PasswordHash []byte
 	CreatedAt    time.Time `gorm:"autoCreateTime"`
+	Admin        bool
 }

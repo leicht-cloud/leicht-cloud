@@ -49,7 +49,15 @@ func (h *signupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// We create the user inside a transaction, so in case we fail to initialize something else
 	// related to the new user we can easily undo the database part
 	err = h.DB.Transaction(func(tx *gorm.DB) error {
-		result := h.DB.Create(&user)
+		var count int64
+		tx = tx.Model(&models.User{}).Count(&count)
+		if count == 0 {
+			// TODO: For now we're making the first user admin by default, this can't remain like this obviously
+			user.Admin = true
+			logrus.Warn("First created user detected, so making it admin")
+		}
+
+		result := tx.Create(&user)
 
 		if result.Error != nil {
 			http.Error(w, result.Error.Error(), http.StatusInternalServerError)
@@ -58,6 +66,7 @@ func (h *signupHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			err = h.Storage.InitUser(r.Context(), &user)
 			if err != nil {
 				logrus.Errorf("Failed to initialize storage for new user, incorrect settings?: %s", err)
+				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return err
 			}
 			http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
