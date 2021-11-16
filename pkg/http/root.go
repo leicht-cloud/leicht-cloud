@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/schoentoon/go-cloud/pkg/auth"
+	"github.com/schoentoon/go-cloud/pkg/http/template"
 	"gorm.io/gorm"
 )
 
@@ -13,7 +14,7 @@ type rootHandler struct {
 }
 
 type folderTemplateData struct {
-	Navbar NavbarData
+	Navbar template.NavbarData
 }
 
 func (h *rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -33,8 +34,8 @@ func (h *rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// internal rewrite to the root folder
 	r.URL.Path = "/folder.gohtml"
 
-	ctx := AttachTemplateData(r.Context(), folderTemplateData{
-		Navbar: NavbarData{
+	ctx := template.AttachTemplateData(r.Context(), folderTemplateData{
+		Navbar: template.NavbarData{
 			Admin: user.Admin,
 		},
 	})

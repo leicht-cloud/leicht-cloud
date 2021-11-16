@@ -1,0 +1,46 @@
+<html>
+
+<head>
+  <link href="/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+  <script src="/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/jquery.min.js"></script>
+
+  {{ navbar .Navbar }}
+
+  <style>
+    .wrapper {
+      display: flex;
+      align-items: stretch;
+    }
+
+    #sidebar {
+      min-width: 250px;
+      max-width: 250px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container wrapper">
+    <nav class="ps-0" id="sidebar">
+      <ul class="list-group">
+        <a class="list-group-item d-flex justify-content-between align-items-center collapsed" data-bs-toggle="collapse"
+          data-bs-target="#plugins-collapse" aria-expanded="true">
+          Plugins
+          <span class="badge bg-primary rounded-pill">{{ len .Plugins }}</span>
+        </a>
+        <div class="collapse show" id="plugins-collapse">
+          <ul class="list-group-item fw-normal pb-1 small">
+            {{ range $i, $plugin := .Plugins }}
+            <li><a href="/admin/plugins/{{ $plugin }}" class="link-dark rounded">{{ $plugin }}</a></li>
+            {{ end }}
+          </ul>
+        </div>
+      </ul>
+    </nav>
+    <div id="content">
+    </div>
+  </div>
+</body>
+
+</html>

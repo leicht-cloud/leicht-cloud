@@ -76,6 +76,16 @@ func (m *Manager) Close() error {
 	return nil
 }
 
+func (m *Manager) Plugins() []string {
+	out := []string{}
+
+	for plugin := range m.plugins {
+		out = append(out, plugin)
+	}
+
+	return out
+}
+
 const plugin_permissions = 0750
 
 // The idea is that every single plugin will get their own working directory.

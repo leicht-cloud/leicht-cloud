@@ -1,4 +1,4 @@
-package http
+package template
 
 import (
 	"context"
@@ -9,14 +9,14 @@ import (
 	"strings"
 )
 
-type templateHandler struct {
+type TemplateHandler struct {
 	assets fs.FS
 
 	template    *template.Template
 	fileHandler http.Handler
 }
 
-func NewTemplateHandler(assets fs.FS) (out *templateHandler, err error) {
+func NewHandler(assets fs.FS) (out *TemplateHandler, err error) {
 	// we gracefully handle panics in here, as tmplFunc may panic when it fails
 	// to load a template. this solution is cleaner than making it return an error
 	// as I can still just put the calls directly into the FuncMap initialization
@@ -42,14 +42,14 @@ func NewTemplateHandler(assets fs.FS) (out *templateHandler, err error) {
 		return nil, err
 	}
 
-	return &templateHandler{
+	return &TemplateHandler{
 		assets:      assets,
 		template:    tmpl,
 		fileHandler: http.FileServer(http.FS(assets)),
 	}, nil
 }
 
-func (t *templateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (t *TemplateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if strings.HasSuffix(r.URL.Path, ".gohtml") {
 		err := t.template.ExecuteTemplate(w, strings.TrimLeft(r.URL.Path, "/"), r.Context().Value(templateDataKeyValue))
 		if err != nil {
