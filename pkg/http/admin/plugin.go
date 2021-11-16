@@ -3,12 +3,19 @@ package admin
 import (
 	"net/http"
 
+	"github.com/gorilla/websocket"
 	"github.com/schoentoon/go-cloud/pkg/auth"
 	"github.com/schoentoon/go-cloud/pkg/plugin"
+	"github.com/sirupsen/logrus"
 )
 
 type pluginStdoutHandler struct {
 	PluginManager *plugin.Manager
+}
+
+var websocketUpgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
 }
 
 func (h *pluginStdoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -22,9 +29,21 @@ func (h *pluginStdoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	name := r.URL.Query().Get("name")
 
 	stdout := h.PluginManager.Stdout(name)
+	logrus.Debug(stdout)
+
+	conn, err := websocketUpgrader.Upgrade(w, r, nil)
+	if err != nil {
+		logrus.Error(err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	for _, line := range stdout {
-		w.Write([]byte(line))
-		w.Write([]byte{'\n'})
+		err = conn.WriteMessage(websocket.TextMessage, []byte(line))
+		if err != nil {
+			logrus.Error(err)
+			conn.Close()
+			return
+		}
 	}
 }

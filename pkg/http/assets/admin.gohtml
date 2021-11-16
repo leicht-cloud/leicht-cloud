@@ -48,11 +48,10 @@
         var term = new Terminal();
         term.open(document.getElementById('terminal'));
 
-        $.get("/admin/plugin/stdout?name={{ .PluginView.Name }}")
-          .then(data => data.split('\n'))
-          .then(data => data.forEach(function (data) {
-            term.writeln(data);
-          }));
+        var socket = new WebSocket("ws://" + document.location.host + "/admin/plugin/stdout?name={{ .PluginView.Name }}");
+        socket.onmessage = function(event) {
+          term.writeln(event.data);
+        };
       </script>
       {{ end }}
     </div>

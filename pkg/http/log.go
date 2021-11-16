@@ -1,6 +1,9 @@
 package http
 
 import (
+	"bufio"
+	"errors"
+	"net"
 	"net/http"
 	"time"
 
@@ -33,8 +36,16 @@ func (r *loggingResponseWriter) WriteHeader(statusCode int) {
 	r.responseData.status = statusCode       // capture status code
 }
 
+func (r *loggingResponseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	h, ok := r.ResponseWriter.(http.Hijacker)
+	if !ok {
+		return nil, nil, errors.New("hijack not supported")
+	}
+	return h.Hijack()
+}
+
 func WithLogging(h http.Handler) http.Handler {
-	loggingFn := func(rw http.ResponseWriter, req *http.Request) {
+	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		start := time.Now()
 
 		responseData := &responseData{
@@ -62,6 +73,5 @@ func WithLogging(h http.Handler) http.Handler {
 			entry = entry.WithField("user", user.Email)
 		}
 		entry.Info("request completed")
-	}
-	return http.HandlerFunc(loggingFn)
+	})
 }
