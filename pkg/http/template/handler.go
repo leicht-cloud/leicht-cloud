@@ -29,6 +29,9 @@ func createFuncMap(assets fs.FS) (out template.FuncMap, err error) {
 
 	return template.FuncMap{
 		"navbar": tmplFunc(assets, "includes/navbar.gohtml"),
+		"notnil": func(data interface{}) bool {
+			return data != nil
+		},
 	}, err
 }
 

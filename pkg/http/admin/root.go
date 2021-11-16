@@ -2,11 +2,11 @@ package admin
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/schoentoon/go-cloud/pkg/auth"
 	"github.com/schoentoon/go-cloud/pkg/http/template"
 	"github.com/schoentoon/go-cloud/pkg/plugin"
-	"github.com/sirupsen/logrus"
 )
 
 type rootHandler struct {
@@ -17,6 +17,13 @@ type rootHandler struct {
 type adminTemplateData struct {
 	Navbar  template.NavbarData
 	Plugins []string
+
+	Page       string
+	PluginView pluginView
+}
+
+type pluginView struct {
+	Name string
 }
 
 func (h *rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -27,17 +34,24 @@ func (h *rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// internal rewrite to the root folder
-	r.URL.Path = "/admin.gohtml"
-
-	logrus.Debug(h.PluginManager.Plugins())
-
-	ctx := template.AttachTemplateData(r.Context(), adminTemplateData{
+	data := adminTemplateData{
 		Navbar: template.NavbarData{
 			Admin: user.Admin,
 		},
 		Plugins: h.PluginManager.Plugins(),
-	})
+	}
+
+	if strings.HasPrefix(r.URL.Path, "/admin/plugin/") {
+		data.Page = "plugin"
+		data.PluginView = pluginView{
+			Name: strings.TrimPrefix(r.URL.Path, "/admin/plugin/"),
+		}
+	}
+
+	// internal rewrite to admin page, so we render that
+	r.URL.Path = "/admin.gohtml"
+
+	ctx := template.AttachTemplateData(r.Context(), data)
 
 	h.StaticHandler.ServeHTTP(w, r.WithContext(ctx))
 }

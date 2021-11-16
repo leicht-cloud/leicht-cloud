@@ -24,3 +24,17 @@ BOOTSTRAP_JS_URL="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap
 
 wget -O assets/css/bootstrap.min.css $BOOTSTRAP_CSS_URL
 wget -O assets/js/bootstrap.bundle.min.js $BOOTSTRAP_JS_URL
+
+XTERMJS="https://registry.npmjs.org/xterm/-/xterm-4.15.0.tgz"
+
+tmp_dir=$(mktemp -d)
+
+pushd $tmp_dir
+
+wget -O xterm.tgz $XTERMJS
+tar xzf xterm.tgz
+
+popd
+
+cp $tmp_dir/package/css/xterm.css assets/css/xterm.css
+cp $tmp_dir/package/lib/xterm.js assets/js/xterm.js
