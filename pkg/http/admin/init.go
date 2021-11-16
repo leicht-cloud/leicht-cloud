@@ -8,4 +8,5 @@ import (
 
 func Init(mux *http.ServeMux, templateHandler http.Handler, pluginManager *plugin.Manager) {
 	mux.Handle("/admin/", &rootHandler{StaticHandler: templateHandler, PluginManager: pluginManager})
+	mux.Handle("/admin/plugin/stdout", &pluginStdoutHandler{PluginManager: pluginManager})
 }
