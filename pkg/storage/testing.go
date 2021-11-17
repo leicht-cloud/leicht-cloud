@@ -35,8 +35,10 @@ func TestStorageProvider(provider StorageProvider, t *testing.T) {
 	if t.Run("File/1KB", func(t *testing.T) { testFile(t, user, provider, 1024) }) {
 		// we only continue with the large file tests if the first one actually passed.
 		t.Run("File/4KB", func(t *testing.T) { testFile(t, user, provider, 1024*4) })
-		t.Run("File/8KB", func(t *testing.T) { testFile(t, user, provider, 1024*4) })
-		//t.Run("File/1MB", func(t *testing.T) { testFile(t, user, provider, 1024*1024) })
+		t.Run("File/8KB", func(t *testing.T) { testFile(t, user, provider, 1024*8) })
+		t.Run("File/16KB", func(t *testing.T) { testFile(t, user, provider, 1024*16) })
+		t.Run("File/32KB", func(t *testing.T) { testFile(t, user, provider, 1024*32) })
+		t.Run("File/1MB", func(t *testing.T) { testFile(t, user, provider, 1024*1024) })
 		//t.Run("File/8MB", func(t *testing.T) { testFile(t, user, provider, 1024*1024*8) })
 		//t.Run("File/16MB", func(t *testing.T) { testFile(t, user, provider, 1024*1024*16) })
 	}
@@ -145,6 +147,75 @@ func testFile(t *testing.T, user *models.User, storage StorageProvider, size int
 		// however the first read call should return an error
 		_, err = io.ReadAll(file)
 		assert.Error(t, err)
+	}) {
+		return
+	}
+}
+
+func BenchmarkStorageProvider(storage StorageProvider, b *testing.B) {
+	user := &models.User{
+		ID:    1337,
+		Email: "test@test.com",
+	}
+
+	if b.Run("File/1KB", func(b *testing.B) { benchmarkFile(b, user, storage, 1024) }) {
+		b.Run("File/4KB", func(b *testing.B) { benchmarkFile(b, user, storage, 1024*4) })
+		b.Run("File/8KB", func(b *testing.B) { benchmarkFile(b, user, storage, 1024*8) })
+		b.Run("File/16KB", func(b *testing.B) { benchmarkFile(b, user, storage, 1024*16) })
+		b.Run("File/32KB", func(b *testing.B) { benchmarkFile(b, user, storage, 1024*32) })
+		b.Run("File/1MB", func(b *testing.B) { benchmarkFile(b, user, storage, 1024*1024) })
+	}
+}
+
+func benchmarkFile(b *testing.B, user *models.User, provider StorageProvider, size int) {
+	filename := fmt.Sprintf("file-%d", size)
+	defer provider.Delete(context.Background(), user, filename)
+
+	assert.NoError(b, provider.InitUser(context.Background(), user))
+
+	if !b.Run("Write", func(b *testing.B) {
+		buffer := make([]byte, size)
+		n, err := rand.Read(buffer)
+		assert.NoError(b, err)
+		assert.Equal(b, size, n)
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			file, err := provider.File(context.Background(), user, filename)
+			if !assert.NoError(b, err) {
+				return
+			}
+
+			n, err := file.Write(buffer)
+			assert.NoError(b, err)
+			assert.Equal(b, size, n)
+			b.SetBytes(int64(n))
+
+			assert.NoError(b, file.Close())
+		}
+	}) {
+		return
+	}
+
+	if !b.Run("Read", func(b *testing.B) {
+		buf := make([]byte, size)
+
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			file, err := provider.File(context.Background(), user, filename)
+			if !assert.NoError(b, err) {
+				return
+			}
+
+			n, err := io.CopyBuffer(io.Discard, file, buf)
+			if err == io.EOF {
+				break
+			}
+			assert.NoError(b, err)
+			b.SetBytes(int64(n))
+			assert.NoError(b, file.Close())
+		}
+		b.StopTimer()
 	}) {
 		return
 	}

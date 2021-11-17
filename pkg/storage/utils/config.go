@@ -7,7 +7,7 @@ import (
 
 	"github.com/schoentoon/go-cloud/pkg/plugin"
 	"github.com/schoentoon/go-cloud/pkg/storage"
-	"github.com/schoentoon/go-cloud/pkg/storage/local"
+	"github.com/schoentoon/go-cloud/pkg/storage/builtin/local"
 	storagePlugin "github.com/schoentoon/go-cloud/pkg/storage/plugin"
 )
 

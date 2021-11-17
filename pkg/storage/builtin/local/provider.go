@@ -15,6 +15,12 @@ type StorageProvider struct {
 	RootPath string `yaml:"path"`
 }
 
+func NewStorageProvider(dir string) *StorageProvider {
+	return &StorageProvider{
+		RootPath: dir,
+	}
+}
+
 func (s *StorageProvider) joinPath(user *models.User, dir string) string {
 	return path.Join(s.RootPath, fmt.Sprintf("%d", user.ID), dir)
 }

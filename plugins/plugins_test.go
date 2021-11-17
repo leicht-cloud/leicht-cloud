@@ -15,12 +15,20 @@ import (
 )
 
 func TestPlugins(t *testing.T) {
+	runPlugins(t)
+}
+
+func BenchmarkPlugins(b *testing.B) {
+	runPlugins(b)
+}
+
+func runPlugins(tb testing.TB) {
 	dir, err := os.ReadDir(".")
-	assert.NoError(t, err)
+	assert.NoError(tb, err)
 
 	cfg := plugin.Config{
 		Path:       []string{"."},
-		WorkDir:    t.TempDir(),
+		WorkDir:    tb.TempDir(),
 		Namespaced: new(bool),
 	}
 	*cfg.Namespaced = true
@@ -31,7 +39,7 @@ func TestPlugins(t *testing.T) {
 	}
 
 	pluginManager, err := cfg.CreateManager()
-	assert.NoError(t, err)
+	assert.NoError(tb, err)
 	defer pluginManager.Close()
 
 	for _, entry := range dir {
@@ -39,11 +47,18 @@ func TestPlugins(t *testing.T) {
 			continue
 		}
 		if _, err := os.Stat(fmt.Sprintf("%s/%s", entry.Name(), entry.Name())); os.IsNotExist(err) {
-			t.Logf("%s isn't compiled?", entry.Name())
+			tb.Logf("%s isn't compiled?", entry.Name())
 			continue
 		}
 
-		t.Run(entry.Name(), func(t *testing.T) { testPlugin(t, pluginManager, entry.Name()) })
+		switch tb.(type) {
+		case *testing.T:
+			t := tb.(*testing.T)
+			t.Run(entry.Name(), func(t *testing.T) { testPlugin(t, pluginManager, entry.Name()) })
+		case *testing.B:
+			b := tb.(*testing.B)
+			b.Run(entry.Name(), func(t *testing.B) { benchmarkPlugin(b, pluginManager, entry.Name()) })
+		}
 	}
 }
 
@@ -60,6 +75,21 @@ func testPlugin(t *testing.T, pManager *plugin.Manager, name string) {
 	assert.NoError(t, err)
 
 	storage.TestStorageProvider(store, t)
+}
+
+func benchmarkPlugin(b *testing.B, pManager *plugin.Manager, name string) {
+	store, err := setupTestEnv(pManager, name, b.TempDir())
+	if err != nil {
+		b.Skip(err)
+	}
+	defer func() {
+		err = teardownTestEnv(name)
+		assert.NoError(b, err)
+	}()
+
+	assert.NoError(b, err)
+
+	storage.BenchmarkStorageProvider(store, b)
 }
 
 func setupTestEnv(pManager *plugin.Manager, name, tmpdir string) (storage.StorageProvider, error) {

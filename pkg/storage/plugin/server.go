@@ -38,7 +38,9 @@ func Start(storage storage.StorageProvider) (err error) {
 	signal.Notify(c, os.Interrupt)
 
 	server := grpc.NewServer(
-		grpc.MaxRecvMsgSize(1024 * 1024 * 32),
+		grpc.MaxRecvMsgSize(1024*1024*32),
+		grpc.WriteBufferSize(0),
+		grpc.ReadBufferSize(0),
 	)
 
 	go func(server *grpc.Server, ch <-chan os.Signal) {
