@@ -33,7 +33,6 @@ func (h *pluginStdoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
-	defer stdout.Close()
 
 	conn, err := websocketUpgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -42,11 +41,20 @@ func (h *pluginStdoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	go func(conn *websocket.Conn) {
+		for {
+			if _, _, err := conn.NextReader(); err != nil {
+				conn.Close()
+				stdout.Close()
+				break
+			}
+		}
+	}(conn)
+
 	for line := range stdout.Channel() {
 		err = conn.WriteMessage(websocket.TextMessage, line)
 		if err != nil {
 			logrus.Error(err)
-			conn.Close()
 			return
 		}
 	}

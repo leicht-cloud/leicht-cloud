@@ -5,6 +5,8 @@ import (
 	"sync"
 )
 
+// TODO: stdout of plugins is currently kept forever, we'll probably want to put a limit on this and purge early lines
+
 type Stdout struct {
 	buffer bytes.Buffer
 
