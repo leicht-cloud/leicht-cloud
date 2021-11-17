@@ -1,15 +1,17 @@
 package auth
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/schoentoon/go-cloud/pkg/models"
 )
 
-func AuthHandler(authProvider *Provider, handler AuthHandlerInterface) http.Handler {
+// AuthHandler you'll want to chain this in if you want to make auth mandatory for the endpoint
+func AuthHandler(handler AuthHandlerInterface) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		user, err := authProvider.VerifyFromRequest(r)
-		if err != nil {
+		user := GetUserFromRequest(r)
+		if user == nil {
 			http.Error(w, "Invalid login", http.StatusForbidden)
 			return
 		}
@@ -20,4 +22,29 @@ func AuthHandler(authProvider *Provider, handler AuthHandlerInterface) http.Hand
 
 type AuthHandlerInterface interface {
 	Serve(user *models.User, w http.ResponseWriter, r *http.Request)
+}
+
+type userKey int
+
+var userKeyValue userKey
+
+// AuthMiddleware if auth should be optional and you want to do your own thing whenever the user is not logged in, use this
+func AuthMiddleware(authProvider *Provider, handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user, err := authProvider.VerifyFromRequest(r)
+		if err != nil {
+			handler.ServeHTTP(w, r)
+			return
+		}
+
+		handler.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), userKeyValue, user)))
+	})
+}
+
+func GetUserFromRequest(r *http.Request) *models.User {
+	user := r.Context().Value(userKeyValue)
+	if user != nil {
+		return user.(*models.User)
+	}
+	return nil
 }

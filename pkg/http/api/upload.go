@@ -15,8 +15,8 @@ type uploadHandler struct {
 	Storage storage.StorageProvider
 }
 
-func newUploadHandler(store storage.StorageProvider, authProvider *auth.Provider) http.Handler {
-	return auth.AuthHandler(authProvider, &uploadHandler{Storage: store})
+func newUploadHandler(store storage.StorageProvider) http.Handler {
+	return auth.AuthHandler(&uploadHandler{Storage: store})
 }
 
 func (h *uploadHandler) Serve(user *models.User, w http.ResponseWriter, r *http.Request) {

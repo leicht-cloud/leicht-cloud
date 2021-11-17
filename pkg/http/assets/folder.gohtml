@@ -1,0 +1,92 @@
+<html>
+
+<head>
+  <link href="/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+  <link href="/css/dataTables.bootstrap5.min.css" rel="stylesheet" crossorigin="anonymous">
+  <script src="/js/jquery.min.js"></script>
+  <script src="/js/jquery.dataTables.min.js"></script>
+  <script src="/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/dataTables.bootstrap5.min.js"></script>
+
+  {{ navbar .Navbar }}
+
+  <script>
+    // thanks https://stackoverflow.com/a/20732091/1128596
+    function humanFileSize(size) {
+      if (size == 0) return 0;
+      var i = Math.floor(Math.log(size) / Math.log(1024));
+      return (size / Math.pow(1024, i)).toFixed(2) * 1 + ' ' + ['B', 'kB', 'MB', 'GB', 'TB'][i];
+    };
+
+    function alert(message, type) {
+      var wrapper = document.createElement('div')
+      wrapper.innerHTML = '<div class="alert alert-' + type + ' alert-dismissible" role="alert">' + message + '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>'
+
+      var alertPlaceholder = document.getElementById('liveAlertPlaceholder');
+      alertPlaceholder.append(wrapper)
+    };
+
+    $(document).ready(function () {
+      var datatable = $('#directory').DataTable({
+        "columnDefs": [{
+            "render": function (data, type, row) {
+              return new Date(Date.parse(data)).toLocaleString();
+            },
+            "targets": 1 // created_at
+          },
+          {
+            "render": function (data, type, row) {
+              return humanFileSize(data);
+            },
+            "targets": 2 // size
+          }
+        ]
+      });
+
+      $.get("/api/list")
+        .fail(function(xhr, status, error) {
+          alert(xhr.responseText, 'danger');
+        })
+        .done(function(data) {
+          data = data.split('\n');
+          data.forEach(function (data) {
+            json = JSON.parse(data);
+            datatable.row.add([
+              json.name,
+              json.created_at,
+              json.size
+            ]).draw(false);
+          });
+
+          datatable.draw();
+        });
+    });
+  </script>
+</head>
+
+<body class="text-center">
+  <div class="container">
+    <form enctype="multipart/form-data" action="/api/upload" method="POST">
+      <div class="file-upload-wrapper input-group">
+        <input type="file" id="input-file-now-custom-2" name="file" class="file-upload form-control-sm" />
+        <button class="btn btn-primary" type="submit">Upload</button>
+      </div>
+    </form>
+
+    <div id="liveAlertPlaceholder"></div>
+
+    <div class="table">
+      <table class="table table-striped" style="width:100%" id="directory">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Created At</th>
+            <th>Size</th>
+          </tr>
+        </thead>
+      </table>
+    </div>
+  </div>
+</body>
+
+</html>

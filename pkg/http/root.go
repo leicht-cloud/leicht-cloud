@@ -4,14 +4,17 @@ import (
 	"net/http"
 
 	"github.com/schoentoon/go-cloud/pkg/auth"
-
+	"github.com/schoentoon/go-cloud/pkg/http/template"
 	"gorm.io/gorm"
 )
 
 type rootHandler struct {
 	DB            *gorm.DB
-	Auth          *auth.Provider
 	StaticHandler http.Handler
+}
+
+type folderTemplateData struct {
+	Navbar template.NavbarData
 }
 
 func (h *rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -20,8 +23,8 @@ func (h *rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := h.Auth.VerifyFromRequest(r)
-	if err != nil {
+	user := auth.GetUserFromRequest(r)
+	if user == nil {
 		// internal we redirect you to signin.html
 		r.URL.Path = "/signin.html"
 		h.StaticHandler.ServeHTTP(w, r)
@@ -29,6 +32,13 @@ func (h *rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// internal rewrite to the root folder
-	r.URL.Path = "/folder.html"
-	h.StaticHandler.ServeHTTP(w, r)
+	r.URL.Path = "/folder.gohtml"
+
+	ctx := template.AttachTemplateData(r.Context(), folderTemplateData{
+		Navbar: template.NavbarData{
+			Admin: user.Admin,
+		},
+	})
+
+	h.StaticHandler.ServeHTTP(w, r.WithContext(ctx))
 }

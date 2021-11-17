@@ -1,0 +1,63 @@
+<html>
+
+<head>
+  <link href="/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+  <link href="/css/xterm.css" rel="stylesheet" crossorigin="anonymous">
+  <script src="/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/jquery.min.js"></script>
+  <script src="/js/xterm.js"></script>
+
+  {{ navbar .Navbar }}
+
+  <style>
+    .wrapper {
+      display: flex;
+      align-items: stretch;
+    }
+
+    #sidebar {
+      min-width: 250px;
+      max-width: 250px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container wrapper">
+    <nav class="ps-0" id="sidebar">
+      <ul class="list-group">
+        <a class="list-group-item d-flex justify-content-between align-items-center collapsed" data-bs-toggle="collapse"
+          data-bs-target="#plugins-collapse" aria-expanded="true">
+          Plugins
+          <span class="badge bg-primary rounded-pill">{{ len .Plugins }}</span>
+        </a>
+        <div class="collapse show" id="plugins-collapse">
+          <ul class="list-group-item fw-normal pb-1 small">
+            {{ range $i, $plugin := .Plugins }}
+            <li><a href="/admin/plugin/{{ $plugin }}" class="link-dark rounded">{{ $plugin }}</a></li>
+            {{ end }}
+          </ul>
+        </div>
+      </ul>
+    </nav>
+    <div id="content">
+      {{ if eq .Page "plugin" }}
+      <h1 class="h2">{{ .PluginView.Name }}</h1>
+      <div id="terminal"></div>
+      <script>
+        var term = new Terminal();
+        term.open(document.getElementById('terminal'));
+        term.setOption('convertEol', true);
+        term.setOption('disableStdin', true);
+
+        var socket = new WebSocket("ws://" + document.location.host + "/admin/plugin/stdout?name={{ .PluginView.Name }}");
+        socket.onmessage = function(event) {
+          term.write(event.data);
+        };
+      </script>
+      {{ end }}
+    </div>
+  </div>
+</body>
+
+</html>

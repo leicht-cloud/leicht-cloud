@@ -1,9 +1,13 @@
 package http
 
 import (
+	"bufio"
+	"errors"
+	"net"
 	"net/http"
 	"time"
 
+	"github.com/schoentoon/go-cloud/pkg/auth"
 	"github.com/sirupsen/logrus"
 )
 
@@ -32,8 +36,16 @@ func (r *loggingResponseWriter) WriteHeader(statusCode int) {
 	r.responseData.status = statusCode       // capture status code
 }
 
+func (r *loggingResponseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	h, ok := r.ResponseWriter.(http.Hijacker)
+	if !ok {
+		return nil, nil, errors.New("hijack not supported")
+	}
+	return h.Hijack()
+}
+
 func WithLogging(h http.Handler) http.Handler {
-	loggingFn := func(rw http.ResponseWriter, req *http.Request) {
+	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		start := time.Now()
 
 		responseData := &responseData{
@@ -48,13 +60,18 @@ func WithLogging(h http.Handler) http.Handler {
 
 		duration := time.Since(start)
 
-		logrus.WithFields(logrus.Fields{
+		user := auth.GetUserFromRequest(req)
+
+		entry := logrus.WithFields(logrus.Fields{
 			"uri":      req.RequestURI,
 			"method":   req.Method,
 			"status":   responseData.status,
 			"duration": duration,
 			"size":     responseData.size,
-		}).Info("request completed")
-	}
-	return http.HandlerFunc(loggingFn)
+		})
+		if user != nil {
+			entry = entry.WithField("user", user.Email)
+		}
+		entry.Info("request completed")
+	})
 }
