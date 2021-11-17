@@ -102,7 +102,6 @@ func (s *StorageProvider) minioObjToFileInfo(obj minio.ObjectInfo, dir string) (
 	return &storage.FileInfo{
 		Name:      strings.TrimPrefix(path, dir),
 		FullPath:  path,
-		MimeType:  obj.ContentType,
 		UpdatedAt: obj.LastModified,
 		Size:      uint64(obj.Size),
 		Directory: isDir,

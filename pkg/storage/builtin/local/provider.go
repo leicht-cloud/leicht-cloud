@@ -54,7 +54,6 @@ func (s *StorageProvider) ListDirectory(ctx context.Context, user *models.User, 
 			out <- storage.FileInfo{
 				Name:      entry.Name(),
 				FullPath:  path.Join(dir, entry.Name()),
-				MimeType:  "",
 				CreatedAt: info.ModTime(),
 				UpdatedAt: info.ModTime(),
 				Size:      uint64(info.Size()),

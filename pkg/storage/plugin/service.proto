@@ -35,11 +35,10 @@ message ConfigData {
 message FileInfo {
     string name = 1;
     string fullPath = 2;
-    string mimeType = 3;
-    uint64 createdAt = 4;
-    uint64 updatedAt = 5;
-    uint64 size = 6;
-    bool directory = 7;
+    uint64 createdAt = 3;
+    uint64 updatedAt = 4;
+    uint64 size = 5;
+    bool directory = 6;
 };
 
 // This sort of maps to the User struct, although we only give the id as that should be the only relevant thing.

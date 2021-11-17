@@ -126,7 +126,6 @@ func (s *GrpcStorage) ListDirectory(ctx context.Context, user *models.User, path
 		out <- storage.FileInfo{
 			Name:      reply.Name,
 			FullPath:  reply.FullPath,
-			MimeType:  reply.MimeType,
 			CreatedAt: time.Unix(int64(reply.CreatedAt), 0),
 			UpdatedAt: time.Unix(int64(reply.UpdatedAt), 0),
 			Size:      reply.Size,
@@ -146,7 +145,6 @@ func (s *GrpcStorage) ListDirectory(ctx context.Context, user *models.User, path
 			out <- storage.FileInfo{
 				Name:      reply.Name,
 				FullPath:  reply.FullPath,
-				MimeType:  reply.MimeType,
 				CreatedAt: time.Unix(int64(reply.CreatedAt), 0),
 				UpdatedAt: time.Unix(int64(reply.UpdatedAt), 0),
 				Size:      reply.Size,
