@@ -28,8 +28,12 @@ func (h *pluginStdoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 	name := r.URL.Query().Get("name")
 
-	stdout := h.PluginManager.Stdout(name)
-	logrus.Debug(stdout)
+	stdout, err := h.PluginManager.Stdout(name)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	defer stdout.Close()
 
 	conn, err := websocketUpgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -38,8 +42,8 @@ func (h *pluginStdoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	for _, line := range stdout {
-		err = conn.WriteMessage(websocket.TextMessage, []byte(line))
+	for line := range stdout.Channel() {
+		err = conn.WriteMessage(websocket.TextMessage, line)
 		if err != nil {
 			logrus.Error(err)
 			conn.Close()

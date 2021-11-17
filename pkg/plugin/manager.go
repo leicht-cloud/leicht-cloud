@@ -11,7 +11,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"strings"
 
 	_ "github.com/schoentoon/go-cloud/pkg/plugin/namespace"
 
@@ -87,13 +86,13 @@ func (m *Manager) Plugins() []string {
 	return out
 }
 
-func (m *Manager) Stdout(name string) []string {
+func (m *Manager) Stdout(name string) (*StdoutChannel, error) {
 	plugin, ok := m.plugins[name]
 	if !ok {
-		return []string{}
+		return nil, fmt.Errorf("No plugin with the name: %s", name)
 	}
 
-	return strings.Split(plugin.stdout.String(), "\n")
+	return plugin.stdout.Channel(), nil
 }
 
 const plugin_permissions = 0750

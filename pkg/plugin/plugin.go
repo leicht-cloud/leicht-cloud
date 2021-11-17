@@ -1,7 +1,6 @@
 package plugin
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
@@ -19,7 +18,7 @@ type plugin struct {
 	workDir string
 	cmd     *exec.Cmd
 
-	stdout bytes.Buffer
+	stdout *Stdout
 
 	nic *host.TunDevice
 }
@@ -27,11 +26,12 @@ type plugin struct {
 func newPluginInstance(manifest *Manifest, cfg *Config, name string) (*plugin, error) {
 	p := &plugin{
 		workDir: filepath.Join(cfg.WorkDir, name),
+		stdout:  newStdout(),
 	}
 	if *cfg.Namespaced {
 		p.cmd = reexec.Command("pluginNamespace")
-		p.cmd.Stdout = &p.stdout
-		p.cmd.Stderr = &p.stdout
+		p.cmd.Stdout = p.stdout
+		p.cmd.Stderr = p.stdout
 		p.cmd.Dir = p.workDir
 		p.cmd.Env = []string{
 			fmt.Sprintf("PLUGIN=%s", name),
@@ -85,8 +85,8 @@ func newPluginInstance(manifest *Manifest, cfg *Config, name string) (*plugin, e
 		}
 	} else {
 		p.cmd = &exec.Cmd{
-			Stdout: &p.stdout,
-			Stderr: &p.stdout,
+			Stdout: p.stdout,
+			Stderr: p.stdout,
 			Path:   filepath.Join(p.workDir, "plugin"),
 			Env: []string{
 				fmt.Sprintf("UNIXSOCKET=%s", p.SocketFile()),
