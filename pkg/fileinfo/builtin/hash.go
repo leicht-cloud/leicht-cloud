@@ -5,6 +5,7 @@ import (
 	"crypto/sha1"
 	"crypto/sha256"
 	"crypto/sha512"
+	"fmt"
 	"hash"
 	"io"
 
@@ -40,4 +41,10 @@ func (h *hashProvider) Check(filename string, reader io.Reader) (interface{}, er
 	}
 
 	return out.Sum(nil), nil
+}
+
+func (h *hashProvider) Render(data interface{}) string {
+	raw := data.([]byte)
+
+	return fmt.Sprintf("%x", raw)
 }

@@ -49,6 +49,10 @@ func (t *testProvider) Check(filename string, reader io.Reader) (interface{}, er
 	return t.output, nil
 }
 
+func (t *testProvider) Render(interface{}) string {
+	return ""
+}
+
 type panicProvider struct {
 }
 
@@ -56,8 +60,12 @@ func (p *panicProvider) MinimumBytes() int64 {
 	return 1
 }
 
-func (p *panicProvider) Check(filename string, readerr io.Reader) (interface{}, error) {
+func (p *panicProvider) Check(filename string, reader io.Reader) (interface{}, error) {
 	panic(errors.New("panic, lol"))
+}
+
+func (p *panicProvider) Render(interface{}) string {
+	return ""
 }
 
 func TestLimitedRead(t *testing.T) {
@@ -73,7 +81,7 @@ func TestLimitedRead(t *testing.T) {
 
 	file, err := store.File(context.Background(), &models.User{}, "/1024")
 	if assert.NoError(t, err) {
-		_, err := manager.FileInfo("/1024", file, "test")
+		_, err := manager.FileInfo("/1024", file, &Options{}, "test")
 		assert.NoError(t, err)
 	}
 }
@@ -102,13 +110,16 @@ func TestMultiprocess(t *testing.T) {
 
 	file, err := store.File(context.Background(), &models.User{}, "/1024")
 	if assert.NoError(t, err) {
-		out, err := manager.FileInfo("/1024", file, "test", "test2", "test3")
+		out, err := manager.FileInfo("/1024", file, &Options{}, "test", "test2", "test3")
 		assert.NoError(t, err)
 
 		assert.Len(t, out, 3)
-		assert.Equal(t, out["test"], 9001)
-		assert.Equal(t, out["test2"], "Test output")
-		assert.Equal(t, out["test3"], nil)
+		assert.Equal(t, 9001, out["test"].Data)
+		assert.NoError(t, out["test"].Err)
+		assert.Equal(t, "Test output", out["test2"].Data)
+		assert.NoError(t, out["test2"].Err)
+		assert.Equal(t, nil, out["test3"].Data)
+		assert.NoError(t, out["test3"].Err)
 	}
 }
 
@@ -122,7 +133,8 @@ func TestPanic(t *testing.T) {
 
 	file, err := store.File(context.Background(), &models.User{}, "/1024")
 	if assert.NoError(t, err) {
-		_, err := manager.FileInfo("/1024", file, "panic")
-		assert.Error(t, err)
+		data, err := manager.FileInfo("/1024", file, &Options{}, "panic")
+		assert.NoError(t, err)
+		assert.Error(t, data["panic"].Err)
 	}
 }

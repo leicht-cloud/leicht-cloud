@@ -26,9 +26,43 @@
       alertPlaceholder.append(wrapper)
     };
 
+    function fileInfo(file) {
+      var jelm = $('#offcanvasRightLabel');
+      jelm.text(file);
+      var body = $('#fileinfoBody');
+      body.empty();
+
+      var offcanvas = new bootstrap.Offcanvas($('#offcanvasRight'));
+      offcanvas.show();
+
+      $.get("/api/fileinfo?filename=" + file)
+        .done(function(data) {
+          var json = JSON.parse(data);
+          if (json.filename != file) {
+            return;
+          }
+
+          $.each(json.data, function(key, data) {
+            console.log(key, data);
+            var element = $('<div class="list-group-item justify-content-between text-break" style="font-family:monospace;"></div>').text(data.data);
+            var title = $('<div class="fw-bold"></div>').text(key);
+            element.prepend(title);
+            body.append(element);
+          });
+        });
+    };
+
     $(document).ready(function () {
       var datatable = $('#directory').DataTable({
-        "columnDefs": [{
+        "columnDefs": [
+          {
+            "render": function(data, type, row) {
+              console.log(data);
+              return '<a href="#" onclick="fileInfo(\'' + data + '\');">' + data +  '</a>';
+            },
+            "targets": 0 // name
+          },
+          {
             "render": function (data, type, row) {
               return new Date(Date.parse(data)).toLocaleString();
             },
@@ -85,6 +119,17 @@
           </tr>
         </thead>
       </table>
+    </div>
+  </div>
+
+  <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasRight" aria-labelledby="offcanvasRightLabel">
+    <div class="list-group list-group-flush">
+      <div class="offcanvas-header">
+        <h5 class="offcanvas-title" id="offcanvasRightLabel">Offcanvas</h5>
+        <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+      </div>
+        <ul id="fileinfoBody" class="offcanvas-body">
+        </ul>
     </div>
   </div>
 </body>

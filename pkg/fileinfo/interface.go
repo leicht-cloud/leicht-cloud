@@ -5,7 +5,7 @@ import (
 	"io"
 )
 
-var providers map[string]FileInfoProvider
+var providers = make(map[string]FileInfoProvider)
 
 func RegisterProvider(name string, provider FileInfoProvider) {
 	providers[name] = provider
@@ -26,4 +26,10 @@ type FileInfoProvider interface {
 	MinimumBytes() int64
 
 	Check(filename string, reader io.Reader) (interface{}, error)
+	Render(data interface{}) string
+}
+
+type Result struct {
+	Data interface{} `json:"data"`
+	Err  error       `json:"error,omitempty"`
 }

@@ -7,11 +7,14 @@ import (
 	"sync"
 
 	"github.com/schoentoon/go-cloud/pkg/storage"
-	"go.uber.org/multierr"
 )
 
 type Manager struct {
 	providers map[string]FileInfoProvider
+}
+
+type Options struct {
+	Render bool
 }
 
 func NewManager(provider ...string) (*Manager, error) {
@@ -30,7 +33,7 @@ func NewManager(provider ...string) (*Manager, error) {
 	return out, nil
 }
 
-func (m *Manager) FileInfo(filename string, file storage.File, requestedProviders ...string) (map[string]interface{}, error) {
+func (m *Manager) FileInfo(filename string, file storage.File, opts *Options, requestedProviders ...string) (map[string]Result, error) {
 	if len(requestedProviders) == 0 {
 		return nil, errors.New("No specified providers to check with")
 	}
@@ -62,7 +65,7 @@ func (m *Manager) FileInfo(filename string, file storage.File, requestedProvider
 		reader = io.LimitReader(reader, min)
 	}
 
-	out := make(map[string]interface{})
+	out := make(map[string]Result)
 	tasks := make([]*checkTask, 0, len(providers))
 	writers := make([]io.Writer, 0, len(providers))
 	closers := make([]io.Closer, 0, len(providers))
@@ -99,21 +102,24 @@ func (m *Manager) FileInfo(filename string, file storage.File, requestedProvider
 		}
 	}()
 
-	var err error
 	for i := 0; i < len(providers); i++ {
 		result := <-outCh
 		if result.err != nil {
-			err = multierr.Append(err, result.err)
+			out[result.name] = Result{Err: result.err}
 		} else {
-			out[result.name] = result.data
+			if opts.Render {
+				provider, ok := m.providers[result.name]
+				if !ok {
+					return nil, fmt.Errorf("No provider found called: %s", result.name)
+				}
+				out[result.name] = Result{Data: provider.Render(result.data)}
+			} else {
+				out[result.name] = Result{Data: result.data}
+			}
 		}
 	}
 
 	wg.Wait()
-
-	if err != nil {
-		return nil, err
-	}
 
 	return out, nil
 }

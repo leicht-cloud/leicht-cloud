@@ -1,14 +1,16 @@
 package builtin
 
 import (
+	"fmt"
 	"io"
 
 	"github.com/h2non/filetype"
+	"github.com/h2non/filetype/types"
 	"github.com/schoentoon/go-cloud/pkg/fileinfo"
 )
 
 func init() {
-	fileinfo.RegisterProvider("mimetype", &MimeTypeProvider{})
+	fileinfo.RegisterProvider("mime", &MimeTypeProvider{})
 }
 
 type MimeTypeProvider struct {
@@ -28,4 +30,10 @@ func (m *MimeTypeProvider) Check(filename string, reader io.Reader) (interface{}
 		return nil, err
 	}
 	return typ, nil
+}
+
+func (m *MimeTypeProvider) Render(data interface{}) string {
+	mime := data.(types.Type).MIME
+
+	return fmt.Sprintf("%s/%s", mime.Type, mime.Subtype)
 }
