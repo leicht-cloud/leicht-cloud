@@ -71,12 +71,17 @@ func (m *Manager) FileInfo(filename string, file storage.File, opts *Options, re
 			return nil, fmt.Errorf("No provider found called: %s", name)
 		}
 
+		pmin, err := p.MinimumBytes(mime.Type, mime.SubType)
+		if err != nil {
+			continue
+		}
+
 		providers[name] = p
 
 		if i == 0 {
-			min = p.MinimumBytes(mime.Type, mime.SubType)
+			min = pmin
 		} else if min != -1 {
-			newMin := p.MinimumBytes(mime.Type, mime.SubType)
+			newMin := pmin
 			if newMin == -1 {
 				min = -1
 			} else if newMin > min {

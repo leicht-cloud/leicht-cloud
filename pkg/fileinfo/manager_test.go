@@ -33,10 +33,10 @@ type testProvider struct {
 	output  interface{}
 }
 
-func (t *testProvider) MinimumBytes(typ, subtyp string) int64 {
+func (t *testProvider) MinimumBytes(typ, subtyp string) (int64, error) {
 	assert.Equal(t.t, "application", typ)
 	assert.Equal(t.t, "octet-stream", subtyp)
-	return t.min
+	return t.min, nil
 }
 
 func (t *testProvider) Check(filename string, reader io.Reader) (interface{}, error) {
@@ -59,8 +59,8 @@ func (t *testProvider) Render(interface{}) string {
 type panicProvider struct {
 }
 
-func (p *panicProvider) MinimumBytes(typ, subtyp string) int64 {
-	return 1
+func (p *panicProvider) MinimumBytes(typ, subtyp string) (int64, error) {
+	return 1, nil
 }
 
 func (p *panicProvider) Check(filename string, reader io.Reader) (interface{}, error) {

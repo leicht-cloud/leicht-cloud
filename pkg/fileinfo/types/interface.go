@@ -35,8 +35,10 @@ func GetMimeProvider(name string) (MimeTypeProvider, error) {
 type FileInfoProvider interface {
 	// indicate how many bytes you need at minimum to be able to determine
 	// your specific file info. you won't get more than provided. in case you
-	// need all the data, please return -1
-	MinimumBytes(typ, subtyp string) int64
+	// need all the data, please return -1. In case the provided mime type doesn't
+	// suit you and you know you won't be able to do anything with the data, returning
+	// any error from here will skip the provider
+	MinimumBytes(typ, subtyp string) (int64, error)
 
 	Check(filename string, reader io.Reader) (interface{}, error)
 	Render(data interface{}) string

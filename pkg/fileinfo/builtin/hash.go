@@ -36,8 +36,8 @@ func newHashProvider(fn func() hash.Hash) *hashProvider {
 	}
 }
 
-func (h *hashProvider) MinimumBytes(typ, subtyp string) int64 {
-	return -1
+func (h *hashProvider) MinimumBytes(typ, subtyp string) (int64, error) {
+	return -1, nil
 }
 
 func (h *hashProvider) Check(filename string, reader io.Reader) (interface{}, error) {
