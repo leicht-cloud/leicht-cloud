@@ -7,11 +7,19 @@ plugin:
   workdir: /tmp/go-cloud/
   namespaced: true
   network_mode: "host"
+fileinfo:
+  mime_provider: "gonative"
+  providers:
+    - md5
+    - sha1
+    - sha256
+    - sha384
+    - sha512
+    - sha3-224
+    - sha3-256
+    - sha3-384
+    - sha3-512
 storage:
-  provider: plugin:minio
+  provider: local
   extra:
-    hostname: '192.168.100.124:9000'
-    https: false
-    access_key: go-cloud
-    secret_key: ThisIsASecret
-    prefix: cloud-
+    path: /tmp/go-cloud
