@@ -9,6 +9,8 @@ import (
 	"hash"
 	"io"
 
+	"golang.org/x/crypto/sha3"
+
 	fileinfo "github.com/schoentoon/go-cloud/pkg/fileinfo/types"
 )
 
@@ -16,7 +18,12 @@ func init() {
 	fileinfo.RegisterProvider("md5", newHashProvider(func() hash.Hash { return md5.New() }))
 	fileinfo.RegisterProvider("sha1", newHashProvider(func() hash.Hash { return sha1.New() }))
 	fileinfo.RegisterProvider("sha256", newHashProvider(func() hash.Hash { return sha256.New() }))
+	fileinfo.RegisterProvider("sha384", newHashProvider(func() hash.Hash { return sha512.New384() }))
 	fileinfo.RegisterProvider("sha512", newHashProvider(func() hash.Hash { return sha512.New() }))
+	fileinfo.RegisterProvider("sha3-224", newHashProvider(func() hash.Hash { return sha3.New224() }))
+	fileinfo.RegisterProvider("sha3-256", newHashProvider(func() hash.Hash { return sha3.New256() }))
+	fileinfo.RegisterProvider("sha3-384", newHashProvider(func() hash.Hash { return sha3.New384() }))
+	fileinfo.RegisterProvider("sha3-512", newHashProvider(func() hash.Hash { return sha3.New512() }))
 }
 
 type hashProvider struct {
