@@ -2,7 +2,6 @@ package fileinfo
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -51,7 +50,10 @@ type Output struct {
 
 func (m *Manager) FileInfo(filename string, file storage.File, opts *Options, requestedProviders ...string) (*Output, error) {
 	if len(requestedProviders) == 0 {
-		return nil, errors.New("No specified providers to check with")
+		// if there are no specific providers requested, we use all of them.
+		for p := range m.providers {
+			requestedProviders = append(requestedProviders, p)
+		}
 	}
 
 	mimereader := io.LimitReader(file, m.mimeTypeProvider.MinimumBytes())

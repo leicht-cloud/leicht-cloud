@@ -31,7 +31,7 @@ func (h *fileInfoHandler) Serve(user *models.User, w http.ResponseWriter, r *htt
 	}
 	defer file.Close()
 
-	out, err := h.FileInfo.FileInfo(filename, file, &fileinfo.Options{Render: true}, "md5", "sha1")
+	out, err := h.FileInfo.FileInfo(filename, file, &fileinfo.Options{Render: true})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
