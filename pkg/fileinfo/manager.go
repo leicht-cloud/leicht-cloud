@@ -1,29 +1,39 @@
 package fileinfo
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"sync"
 
+	"github.com/schoentoon/go-cloud/pkg/fileinfo/types"
 	"github.com/schoentoon/go-cloud/pkg/storage"
 )
 
 type Manager struct {
-	providers map[string]FileInfoProvider
+	providers        map[string]types.FileInfoProvider
+	mimeTypeProvider types.MimeTypeProvider
 }
 
 type Options struct {
 	Render bool
 }
 
-func NewManager(provider ...string) (*Manager, error) {
+func NewManager(mimetypeProvider string, provider ...string) (*Manager, error) {
 	out := &Manager{
-		providers: map[string]FileInfoProvider{},
+		providers: map[string]types.FileInfoProvider{},
 	}
 
+	mp, err := types.GetMimeProvider(mimetypeProvider)
+	if err != nil {
+		return nil, err
+	}
+	out.mimeTypeProvider = mp
+
 	for _, name := range provider {
-		p, err := GetProvider(name)
+		p, err := types.GetProvider(name)
 		if err != nil {
 			return nil, err
 		}
@@ -33,12 +43,25 @@ func NewManager(provider ...string) (*Manager, error) {
 	return out, nil
 }
 
-func (m *Manager) FileInfo(filename string, file storage.File, opts *Options, requestedProviders ...string) (map[string]Result, error) {
+type Output struct {
+	Data     map[string]types.Result `json:"data"`
+	MimeType types.MimeType          `json:"mime"`
+	Filename string                  `json:"filename"`
+}
+
+func (m *Manager) FileInfo(filename string, file storage.File, opts *Options, requestedProviders ...string) (*Output, error) {
 	if len(requestedProviders) == 0 {
 		return nil, errors.New("No specified providers to check with")
 	}
 
-	providers := make(map[string]FileInfoProvider, len(requestedProviders))
+	mimereader := io.LimitReader(file, m.mimeTypeProvider.MinimumBytes())
+	mime, reader, err := m.readMime(filename, mimereader)
+	if err != nil {
+		return nil, err
+	}
+	reader = io.MultiReader(reader, file)
+
+	providers := make(map[string]types.FileInfoProvider, len(requestedProviders))
 	var min int64
 	for i, name := range requestedProviders {
 		p, ok := m.providers[name]
@@ -49,9 +72,9 @@ func (m *Manager) FileInfo(filename string, file storage.File, opts *Options, re
 		providers[name] = p
 
 		if i == 0 {
-			min = p.MinimumBytes()
+			min = p.MinimumBytes(mime.Type, mime.SubType)
 		} else if min != -1 {
-			newMin := p.MinimumBytes()
+			newMin := p.MinimumBytes(mime.Type, mime.SubType)
 			if newMin == -1 {
 				min = -1
 			} else if newMin > min {
@@ -60,12 +83,15 @@ func (m *Manager) FileInfo(filename string, file storage.File, opts *Options, re
 		}
 	}
 
-	var reader io.Reader = file
 	if min > 0 {
 		reader = io.LimitReader(reader, min)
 	}
 
-	out := make(map[string]Result)
+	out := &Output{
+		Data:     make(map[string]types.Result, len(providers)),
+		MimeType: *mime,
+		Filename: filename,
+	}
 	tasks := make([]*checkTask, 0, len(providers))
 	writers := make([]io.Writer, 0, len(providers))
 	closers := make([]io.Closer, 0, len(providers))
@@ -105,16 +131,16 @@ func (m *Manager) FileInfo(filename string, file storage.File, opts *Options, re
 	for i := 0; i < len(providers); i++ {
 		result := <-outCh
 		if result.err != nil {
-			out[result.name] = Result{Err: result.err}
+			out.Data[result.name] = types.Result{Err: result.err}
 		} else {
 			if opts.Render {
 				provider, ok := m.providers[result.name]
 				if !ok {
 					return nil, fmt.Errorf("No provider found called: %s", result.name)
 				}
-				out[result.name] = Result{Data: provider.Render(result.data)}
+				out.Data[result.name] = types.Result{Data: provider.Render(result.data)}
 			} else {
-				out[result.name] = Result{Data: result.data}
+				out.Data[result.name] = types.Result{Data: result.data}
 			}
 		}
 	}
@@ -124,9 +150,23 @@ func (m *Manager) FileInfo(filename string, file storage.File, opts *Options, re
 	return out, nil
 }
 
+func (m *Manager) readMime(filename string, reader io.Reader) (*types.MimeType, io.Reader, error) {
+	buf, err := ioutil.ReadAll(reader)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	mime, err := m.mimeTypeProvider.MimeType(filename, bytes.NewReader(buf))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return mime, bytes.NewReader(buf), nil
+}
+
 type checkTask struct {
 	reader       io.Reader
-	provider     FileInfoProvider
+	provider     types.FileInfoProvider
 	providerName string
 }
 

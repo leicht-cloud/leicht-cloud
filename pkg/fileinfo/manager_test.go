@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"testing"
 
+	_ "github.com/schoentoon/go-cloud/pkg/fileinfo/builtin"
 	"github.com/schoentoon/go-cloud/pkg/models"
 	"github.com/schoentoon/go-cloud/pkg/storage/builtin/memory"
 	"github.com/stretchr/testify/assert"
@@ -32,7 +33,9 @@ type testProvider struct {
 	output  interface{}
 }
 
-func (t *testProvider) MinimumBytes() int64 {
+func (t *testProvider) MinimumBytes(typ, subtyp string) int64 {
+	assert.Equal(t.t, "application", typ)
+	assert.Equal(t.t, "octet-stream", subtyp)
 	return t.min
 }
 
@@ -56,7 +59,7 @@ func (t *testProvider) Render(interface{}) string {
 type panicProvider struct {
 }
 
-func (p *panicProvider) MinimumBytes() int64 {
+func (p *panicProvider) MinimumBytes(typ, subtyp string) int64 {
 	return 1
 }
 
@@ -72,7 +75,7 @@ func TestLimitedRead(t *testing.T) {
 	store := newTestFS(t)
 	fill(t, store, "/1024", 1024)
 
-	manager, err := NewManager()
+	manager, err := NewManager("gonative")
 	assert.NoError(t, err)
 	manager.providers["test"] = &testProvider{
 		t:   t,
@@ -90,7 +93,7 @@ func TestMultiprocess(t *testing.T) {
 	store := newTestFS(t)
 	fill(t, store, "/1024", 1024)
 
-	manager, err := NewManager()
+	manager, err := NewManager("gonative")
 	assert.NoError(t, err)
 	manager.providers["test"] = &testProvider{
 		t:      t,
@@ -113,13 +116,13 @@ func TestMultiprocess(t *testing.T) {
 		out, err := manager.FileInfo("/1024", file, &Options{}, "test", "test2", "test3")
 		assert.NoError(t, err)
 
-		assert.Len(t, out, 3)
-		assert.Equal(t, 9001, out["test"].Data)
-		assert.NoError(t, out["test"].Err)
-		assert.Equal(t, "Test output", out["test2"].Data)
-		assert.NoError(t, out["test2"].Err)
-		assert.Equal(t, nil, out["test3"].Data)
-		assert.NoError(t, out["test3"].Err)
+		assert.Len(t, out.Data, 3)
+		assert.Equal(t, 9001, out.Data["test"].Data)
+		assert.NoError(t, out.Data["test"].Err)
+		assert.Equal(t, "Test output", out.Data["test2"].Data)
+		assert.NoError(t, out.Data["test2"].Err)
+		assert.Equal(t, nil, out.Data["test3"].Data)
+		assert.NoError(t, out.Data["test3"].Err)
 	}
 }
 
@@ -127,7 +130,7 @@ func TestPanic(t *testing.T) {
 	store := newTestFS(t)
 	fill(t, store, "/1024", 1024)
 
-	manager, err := NewManager()
+	manager, err := NewManager("gonative")
 	assert.NoError(t, err)
 	manager.providers["panic"] = &panicProvider{}
 
@@ -135,6 +138,6 @@ func TestPanic(t *testing.T) {
 	if assert.NoError(t, err) {
 		data, err := manager.FileInfo("/1024", file, &Options{}, "panic")
 		assert.NoError(t, err)
-		assert.Error(t, data["panic"].Err)
+		assert.Error(t, data.Data["panic"].Err)
 	}
 }

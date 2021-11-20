@@ -57,7 +57,7 @@ func main() {
 		logrus.Fatal(err)
 	}
 
-	fileinfo, err := fileinfo.NewManager("mime", "md5", "sha1", "sha256", "sha512")
+	fileinfo, err := fileinfo.NewManager("gonative", "md5", "sha1", "sha256", "sha512")
 	if err != nil {
 		logrus.Fatal(err)
 	}

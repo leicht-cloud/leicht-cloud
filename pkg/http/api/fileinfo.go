@@ -21,11 +21,6 @@ func newFileInfoHandler(store storage.StorageProvider, fileinfo *fileinfo.Manage
 	return auth.AuthHandler(&fileInfoHandler{Storage: store, FileInfo: fileinfo})
 }
 
-type fileinfoOutput struct {
-	Data     map[string]fileinfo.Result `json:"data"`
-	Filename string                     `json:"filename"`
-}
-
 func (h *fileInfoHandler) Serve(user *models.User, w http.ResponseWriter, r *http.Request) {
 	filename := r.URL.Query().Get("filename")
 
@@ -36,15 +31,10 @@ func (h *fileInfoHandler) Serve(user *models.User, w http.ResponseWriter, r *htt
 	}
 	defer file.Close()
 
-	data, err := h.FileInfo.FileInfo(filename, file, &fileinfo.Options{Render: true}, "mime", "md5", "sha1")
+	out, err := h.FileInfo.FileInfo(filename, file, &fileinfo.Options{Render: true}, "md5", "sha1")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
-	}
-
-	out := fileinfoOutput{
-		Data:     data,
-		Filename: filename,
 	}
 
 	err = json.NewEncoder(w).Encode(out)

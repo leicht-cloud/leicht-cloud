@@ -1,4 +1,4 @@
-package fileinfo
+package types
 
 import (
 	"fmt"
@@ -6,9 +6,14 @@ import (
 )
 
 var providers = make(map[string]FileInfoProvider)
+var mimeprovider = make(map[string]MimeTypeProvider)
 
 func RegisterProvider(name string, provider FileInfoProvider) {
 	providers[name] = provider
+}
+
+func RegisterMimeProvider(name string, provider MimeTypeProvider) {
+	mimeprovider[name] = provider
 }
 
 func GetProvider(name string) (FileInfoProvider, error) {
@@ -19,14 +24,33 @@ func GetProvider(name string) (FileInfoProvider, error) {
 	return p, nil
 }
 
+func GetMimeProvider(name string) (MimeTypeProvider, error) {
+	p, ok := mimeprovider[name]
+	if !ok {
+		return nil, fmt.Errorf("No provider found with the name: %s", name)
+	}
+	return p, nil
+}
+
 type FileInfoProvider interface {
 	// indicate how many bytes you need at minimum to be able to determine
 	// your specific file info. you won't get more than provided. in case you
 	// need all the data, please return -1
-	MinimumBytes() int64
+	MinimumBytes(typ, subtyp string) int64
 
 	Check(filename string, reader io.Reader) (interface{}, error)
 	Render(data interface{}) string
+}
+
+type MimeTypeProvider interface {
+	MinimumBytes() int64
+
+	MimeType(filename string, reader io.Reader) (*MimeType, error)
+}
+
+type MimeType struct {
+	Type    string `json:"type"`
+	SubType string `json:"subtype"`
 }
 
 type Result struct {

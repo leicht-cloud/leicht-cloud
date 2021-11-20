@@ -9,7 +9,7 @@ import (
 	"hash"
 	"io"
 
-	"github.com/schoentoon/go-cloud/pkg/fileinfo"
+	fileinfo "github.com/schoentoon/go-cloud/pkg/fileinfo/types"
 )
 
 func init() {
@@ -29,7 +29,7 @@ func newHashProvider(fn func() hash.Hash) *hashProvider {
 	}
 }
 
-func (h *hashProvider) MinimumBytes() int64 {
+func (h *hashProvider) MinimumBytes(typ, subtyp string) int64 {
 	return -1
 }
 

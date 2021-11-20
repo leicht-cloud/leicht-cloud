@@ -1,22 +1,21 @@
 package builtin
 
 import (
-	"fmt"
 	"io"
 
 	"github.com/h2non/filetype"
 	"github.com/h2non/filetype/types"
-	"github.com/schoentoon/go-cloud/pkg/fileinfo"
+	fileinfo "github.com/schoentoon/go-cloud/pkg/fileinfo/types"
 )
 
 func init() {
-	fileinfo.RegisterProvider("mime", &MimeTypeProvider{})
+	fileinfo.RegisterMimeProvider("gonative", &GoNativeMimeTypeProvider{})
 }
 
-type MimeTypeProvider struct {
+type GoNativeMimeTypeProvider struct {
 }
 
-func (m *MimeTypeProvider) MinimumBytes() int64 {
+func (m *GoNativeMimeTypeProvider) MinimumBytes() int64 {
 	// according to the README of the filetype library we would only need 262, however
 	// issues point out this isn't always the case https://github.com/h2non/filetype/issues/107
 	// also ideally this will get changed to a constant from their library the moment
@@ -24,16 +23,22 @@ func (m *MimeTypeProvider) MinimumBytes() int64 {
 	return 262
 }
 
-func (m *MimeTypeProvider) Check(filename string, reader io.Reader) (interface{}, error) {
+func (m *GoNativeMimeTypeProvider) MimeType(filename string, reader io.Reader) (*fileinfo.MimeType, error) {
 	typ, err := filetype.MatchReader(reader)
 	if err != nil {
 		return nil, err
 	}
-	return typ, nil
-}
 
-func (m *MimeTypeProvider) Render(data interface{}) string {
-	mime := data.(types.Type).MIME
+	// we explicitly rewrite the unknown type to application/octet-stream
+	if typ == types.Unknown {
+		return &fileinfo.MimeType{
+			Type:    "application",
+			SubType: "octet-stream",
+		}, nil
+	}
 
-	return fmt.Sprintf("%s/%s", mime.Type, mime.Subtype)
+	return &fileinfo.MimeType{
+		Type:    typ.MIME.Type,
+		SubType: typ.MIME.Subtype,
+	}, nil
 }
