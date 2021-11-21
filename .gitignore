@@ -3,3 +3,5 @@ pkg/http/assets/js/
 ./go-cloud
 *.db
 tmp/
+
+*.pb.go

@@ -72,24 +72,26 @@ func (s *GrpcFileinfo) Check(filename string, reader io.Reader) ([]byte, error) 
 			n, err := reader.Read(buf)
 			if err != nil {
 				if err == io.EOF {
-					err = client.CloseSend()
-					if err == nil {
-						return
-					}
+					logrus.Debug("Sending EOF")
+					_ = client.Send(&CheckQuery{
+						Filename: filename,
+						Data:     buf[:n],
+						EOF:      true,
+					})
+					return
+				} else {
+					logrus.Error(err)
+					errCh <- err
+					return
 				}
-				logrus.Error(err)
-				errCh <- err
-				return
 			}
 
+			logrus.Debugf("Sending %d more bytes over grpc", n)
 			err = client.Send(&CheckQuery{
 				Filename: filename,
 				Data:     buf[:n],
 			})
 			if err != nil {
-				if err == io.EOF {
-					return
-				}
 				logrus.Error(err)
 				errCh <- err
 				return

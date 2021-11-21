@@ -55,31 +55,47 @@ func (s *BridgeFileinfoProviderServer) MinimumBytes(_ context.Context, req *Mini
 func (s *BridgeFileinfoProviderServer) Check(srv FileInfoProvider_CheckServer) error {
 	rp, wp := io.Pipe()
 	errCh := make(chan error)
-	recvCh := make(chan *CheckQuery)
+	filenameCh := make(chan string, 1)
 	respCh := make(chan interface{})
 	defer rp.Close()
 	defer wp.Close()
 
-	go func(recvCh chan<- *CheckQuery, errCh chan<- error) {
+	go func(filenameCh chan<- string, errCh chan<- error) {
+		first := true
 		for {
 			msg, err := srv.Recv()
+			if err != nil {
+				if err == io.EOF {
+					wp.Close()
+				} else {
+					errCh <- err
+				}
+				return
+			}
+			if msg.GetEOF() {
+				logrus.Debug("Got EOF, exiting receive loop..")
+				rp.Close()
+				wp.Close()
+				return
+			}
+
+			if first {
+				first = false
+				filenameCh <- msg.GetFilename()
+			}
+
+			_, err = wp.Write(msg.GetData())
 			if err != nil {
 				errCh <- err
 				return
 			}
-			recvCh <- msg
 		}
-	}(recvCh, errCh)
+	}(filenameCh, errCh)
 
-	first := true
 	for {
 		select {
 		case err := <-errCh:
 			logrus.Debugf("err: %s", err)
-			if err == io.EOF {
-				wp.Close()
-				break
-			}
 			return err
 		case resp := <-respCh:
 			logrus.Debugf("resp: %#v", resp)
@@ -96,24 +112,17 @@ func (s *BridgeFileinfoProviderServer) Check(srv FileInfoProvider_CheckServer) e
 			}
 
 			// we shouldn't ever reach this..
-		case msg := <-recvCh:
-			logrus.Debugf("recv: len(%d)", len(msg.GetData()))
-			if first {
-				first = false
-				go func(ch chan<- interface{}, filename string) {
-					data, err := s.FileInfo.Check(filename, rp)
-					logrus.Debugf("data: %s, err: %s", data, err)
-					if err != nil {
-						ch <- err
-					} else {
-						ch <- data
-					}
-				}(respCh, msg.GetFilename())
-			}
-			_, err := wp.Write(msg.GetData())
-			if err != nil {
-				return err
-			}
+		case filename := <-filenameCh:
+			logrus.Debugf("filename: %s", filename)
+			go func(ch chan<- interface{}, filename string) {
+				data, err := s.FileInfo.Check(filename, rp)
+				logrus.Debugf("data: %s, err: %s", data, err)
+				if err != nil {
+					ch <- err
+				} else {
+					ch <- data
+				}
+			}(respCh, filename)
 		}
 	}
 }

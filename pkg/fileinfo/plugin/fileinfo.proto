@@ -30,6 +30,7 @@ message MinimumBytesResponse {
 message CheckQuery {
     string filename = 1;
     bytes data = 2;
+    bool EOF = 3;
 };
 
 message CheckResponse {
