@@ -1,9 +1,12 @@
 package types
 
 import (
+	"errors"
 	"fmt"
 	"io"
 )
+
+var ErrSkip = errors.New("Skip")
 
 var providers = make(map[string]FileInfoProvider)
 var mimeprovider = make(map[string]MimeTypeProvider)

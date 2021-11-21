@@ -6,14 +6,21 @@ package plugin
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
+	"sync"
 
+	"github.com/schoentoon/go-cloud/pkg/fileinfo/types"
 	grpc "google.golang.org/grpc"
 )
 
 type GrpcFileinfo struct {
 	Conn   *grpc.ClientConn
 	Client FileInfoProviderClient
+
+	mutex    sync.RWMutex
+	minBytes map[string]int64
+	skipMap  map[string]struct{}
 }
 
 func toError2(err *Error, Err error) error {
@@ -28,8 +35,10 @@ func toError2(err *Error, Err error) error {
 
 func NewGrpcFileinfo(conn *grpc.ClientConn) (*GrpcFileinfo, error) {
 	out := &GrpcFileinfo{
-		Conn:   conn,
-		Client: NewFileInfoProviderClient(conn),
+		Conn:     conn,
+		Client:   NewFileInfoProviderClient(conn),
+		minBytes: make(map[string]int64),
+		skipMap:  make(map[string]struct{}),
 	}
 
 	return out, nil
@@ -39,16 +48,44 @@ func (s *GrpcFileinfo) Close() error {
 	return nil
 }
 
+func (s *GrpcFileinfo) cachedMinBytes(key string) (int64, error, bool) {
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+
+	_, ok := s.skipMap[key]
+	if ok {
+		return 0, types.ErrSkip, true
+	}
+
+	min, ok := s.minBytes[key]
+	return min, nil, ok
+}
+
 func (s *GrpcFileinfo) MinimumBytes(typ, subtyp string) (int64, error) {
+	key := fmt.Sprintf("%s/%s", typ, subtyp)
+	min, err, ok := s.cachedMinBytes(key)
+	if ok {
+		if err != nil {
+			return 0, err
+		}
+		return min, nil
+	}
+
 	resp, err := s.Client.MinimumBytes(context.Background(), &MinimumBytesQuery{
 		Type:    typ,
 		Subtype: subtyp,
 	})
 	err = toError2(resp.GetError(), err)
+
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
 	if err != nil {
+		s.skipMap[key] = struct{}{}
 		return 0, err
 	}
 
+	s.minBytes[key] = resp.GetLength()
 	return resp.GetLength(), nil
 }
 
