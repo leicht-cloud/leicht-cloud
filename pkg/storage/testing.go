@@ -169,7 +169,9 @@ func BenchmarkStorageProvider(storage StorageProvider, b *testing.B) {
 
 func benchmarkFile(b *testing.B, user *models.User, provider StorageProvider, size int) {
 	filename := fmt.Sprintf("file-%d", size)
-	defer provider.Delete(context.Background(), user, filename)
+	defer func(b *testing.B) {
+		assert.NoError(b, provider.Delete(context.Background(), user, filename))
+	}(b)
 
 	assert.NoError(b, provider.InitUser(context.Background(), user))
 

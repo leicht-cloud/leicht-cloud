@@ -121,7 +121,7 @@ func TestMultiprocess(t *testing.T) {
 		assert.NoError(t, out.Data["test"].Err)
 		assert.Equal(t, []byte("Test output"), out.Data["test2"].Data)
 		assert.NoError(t, out.Data["test2"].Err)
-		assert.Equal(t, nil, out.Data["test3"].Data)
+		assert.Equal(t, []byte(nil), out.Data["test3"].Data)
 		assert.NoError(t, out.Data["test3"].Err)
 	}
 }

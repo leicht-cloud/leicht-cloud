@@ -7,25 +7,17 @@ package plugin
 import (
 	context "context"
 	"io"
-	"sync"
 
 	"github.com/schoentoon/go-cloud/pkg/fileinfo/types"
 )
 
 type BridgeFileinfoProviderServer struct {
 	FileInfo types.FileInfoProvider
-
-	mutex sync.RWMutex
-	// the value of this map is always going to be storage.File,
-	// but for some reason golang doesn't allow you to use this as a value?
-	openFiles map[int32]interface{}
-	nextID    int32
 }
 
 func NewFileinfoBridge(fileinfo types.FileInfoProvider) *BridgeFileinfoProviderServer {
 	return &BridgeFileinfoProviderServer{
-		FileInfo:  fileinfo,
-		openFiles: make(map[int32]interface{}),
+		FileInfo: fileinfo,
 	}
 }
 

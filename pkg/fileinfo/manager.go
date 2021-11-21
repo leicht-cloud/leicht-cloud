@@ -152,7 +152,10 @@ func (m *Manager) FileInfo(filename string, file storage.File, opts *Options, re
 
 	go func() {
 		mw := io.MultiWriter(writers...)
-		io.Copy(mw, reader)
+		_, err := io.Copy(mw, reader)
+		if err != nil {
+			logrus.Error(err)
+		}
 
 		for _, c := range closers {
 			c.Close()
@@ -229,7 +232,12 @@ func (t *checkTask) Run(filename string, wg *sync.WaitGroup) (out []byte, err er
 		reader = io.LimitReader(reader, t.minbytes)
 	}
 
-	defer io.Copy(io.Discard, t.reader) // it is important here that we drain the full io.Reader, not the possibly limited one
+	defer func() {
+		_, err := io.Copy(io.Discard, t.reader) // it is important here that we drain the full io.Reader, not the possibly limited one
+		if err != nil {
+			logrus.Error(err)
+		}
+	}()
 
 	out, err = t.provider.Check(filename, reader)
 	return
