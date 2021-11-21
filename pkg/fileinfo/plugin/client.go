@@ -8,7 +8,6 @@ import (
 	"errors"
 	"io"
 
-	"github.com/sirupsen/logrus"
 	grpc "google.golang.org/grpc"
 )
 
@@ -72,7 +71,6 @@ func (s *GrpcFileinfo) Check(filename string, reader io.Reader) ([]byte, error) 
 			n, err := reader.Read(buf)
 			if err != nil {
 				if err == io.EOF {
-					logrus.Debug("Sending EOF")
 					_ = client.Send(&CheckQuery{
 						Filename: filename,
 						Data:     buf[:n],
@@ -80,19 +78,16 @@ func (s *GrpcFileinfo) Check(filename string, reader io.Reader) ([]byte, error) 
 					})
 					return
 				} else {
-					logrus.Error(err)
 					errCh <- err
 					return
 				}
 			}
 
-			logrus.Debugf("Sending %d more bytes over grpc", n)
 			err = client.Send(&CheckQuery{
 				Filename: filename,
 				Data:     buf[:n],
 			})
 			if err != nil {
-				logrus.Error(err)
 				errCh <- err
 				return
 			}
@@ -104,7 +99,6 @@ func (s *GrpcFileinfo) Check(filename string, reader io.Reader) ([]byte, error) 
 		resp := &CheckResponse{}
 		err := client.RecvMsg(resp)
 		if err != nil {
-			logrus.Error(err)
 			errCh <- err
 			return
 		}
@@ -114,17 +108,14 @@ func (s *GrpcFileinfo) Check(filename string, reader io.Reader) ([]byte, error) 
 	for {
 		select {
 		case resp := <-respCh:
-			logrus.Debugf("resp: %#v", resp)
 			err := toError2(resp.GetError(), nil)
 			if err != nil {
 				return nil, err
 			}
 			return resp.GetData(), nil
 		case err := <-recvErrCh:
-			logrus.Debugf("err: %s", err)
 			return nil, err
 		case err := <-respErrCh:
-			logrus.Debugf("err: %s", err)
 			return nil, err
 		}
 	}

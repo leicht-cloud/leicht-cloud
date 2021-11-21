@@ -10,7 +10,6 @@ import (
 	"sync"
 
 	"github.com/schoentoon/go-cloud/pkg/fileinfo/types"
-	"github.com/sirupsen/logrus"
 )
 
 type BridgeFileinfoProviderServer struct {
@@ -41,7 +40,6 @@ func toError(err error) *Error {
 
 func (s *BridgeFileinfoProviderServer) MinimumBytes(_ context.Context, req *MinimumBytesQuery) (*MinimumBytesResponse, error) {
 	min, err := s.FileInfo.MinimumBytes(req.Type, req.Subtype)
-	logrus.Debugf("min: %d, err: %s", min, err)
 	if err != nil {
 		return &MinimumBytesResponse{
 			Error: toError(err),
@@ -73,7 +71,6 @@ func (s *BridgeFileinfoProviderServer) Check(srv FileInfoProvider_CheckServer) e
 				return
 			}
 			if msg.GetEOF() {
-				logrus.Debug("Got EOF, exiting receive loop..")
 				rp.Close()
 				wp.Close()
 				return
@@ -95,10 +92,8 @@ func (s *BridgeFileinfoProviderServer) Check(srv FileInfoProvider_CheckServer) e
 	for {
 		select {
 		case err := <-errCh:
-			logrus.Debugf("err: %s", err)
 			return err
 		case resp := <-respCh:
-			logrus.Debugf("resp: %#v", resp)
 			if err, ok := resp.(error); ok {
 				return srv.SendAndClose(&CheckResponse{
 					Error: toError(err),
@@ -113,10 +108,8 @@ func (s *BridgeFileinfoProviderServer) Check(srv FileInfoProvider_CheckServer) e
 
 			// we shouldn't ever reach this..
 		case filename := <-filenameCh:
-			logrus.Debugf("filename: %s", filename)
 			go func(ch chan<- interface{}, filename string) {
 				data, err := s.FileInfo.Check(filename, rp)
-				logrus.Debugf("data: %s, err: %s", data, err)
 				if err != nil {
 					ch <- err
 				} else {
@@ -128,9 +121,7 @@ func (s *BridgeFileinfoProviderServer) Check(srv FileInfoProvider_CheckServer) e
 }
 
 func (s *BridgeFileinfoProviderServer) Render(_ context.Context, req *RenderQuery) (*RenderResponse, error) {
-	logrus.Debugf("Render(%#v)", req.GetData())
 	out, err := s.FileInfo.Render(req.GetData())
-	logrus.Debugf("out: %s, err: %s", out, err)
 	if err != nil {
 		return &RenderResponse{
 			Error: toError(err),
