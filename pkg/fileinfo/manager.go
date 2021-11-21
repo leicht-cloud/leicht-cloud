@@ -126,10 +126,16 @@ func (m *Manager) FileInfo(filename string, file storage.File, opts *Options, re
 		writers = append(writers, wp)
 		closers = append(closers, wp)
 
+		pmin, err := provider.MinimumBytes(mime.Type, mime.SubType)
+		if err != nil {
+			continue
+		}
+
 		tasks = append(tasks, &checkTask{
 			reader:       rp,
 			provider:     provider,
 			providerName: name,
+			minbytes:     pmin,
 		})
 	}
 
@@ -198,6 +204,7 @@ type checkTask struct {
 	reader       io.Reader
 	provider     types.FileInfoProvider
 	providerName string
+	minbytes     int64
 }
 
 type taskOut struct {
@@ -217,7 +224,13 @@ func (t *checkTask) Run(filename string, wg *sync.WaitGroup) (out []byte, err er
 		}
 	}()
 
-	defer io.Copy(io.Discard, t.reader)
-	out, err = t.provider.Check(filename, t.reader)
+	reader := t.reader
+	if t.minbytes > 0 {
+		reader = io.LimitReader(reader, t.minbytes)
+	}
+
+	defer io.Copy(io.Discard, t.reader) // it is important here that we drain the full io.Reader, not the possibly limited one
+
+	out, err = t.provider.Check(filename, reader)
 	return
 }
