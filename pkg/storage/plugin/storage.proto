@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package plugin;
+package gocloud.storage.plugin;
 
 option go_package = "github.com/schoentoon/go-cloud/pkg/storage/plugin";
 

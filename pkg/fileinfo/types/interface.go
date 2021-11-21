@@ -40,8 +40,8 @@ type FileInfoProvider interface {
 	// any error from here will skip the provider
 	MinimumBytes(typ, subtyp string) (int64, error)
 
-	Check(filename string, reader io.Reader) (interface{}, error)
-	Render(data interface{}) string
+	Check(filename string, reader io.Reader) ([]byte, error)
+	Render(data []byte) (string, error)
 }
 
 type MimeTypeProvider interface {
@@ -56,6 +56,7 @@ type MimeType struct {
 }
 
 type Result struct {
-	Data interface{} `json:"data"`
-	Err  error       `json:"error,omitempty"`
+	Data  []byte `json:"data"`
+	Human string `json:"human"`
+	Err   error  `json:"error,omitempty"`
 }

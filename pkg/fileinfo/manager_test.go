@@ -30,7 +30,7 @@ type testProvider struct {
 	t       *testing.T
 	min     int64
 	scanMax bool
-	output  interface{}
+	output  []byte
 }
 
 func (t *testProvider) MinimumBytes(typ, subtyp string) (int64, error) {
@@ -39,7 +39,7 @@ func (t *testProvider) MinimumBytes(typ, subtyp string) (int64, error) {
 	return t.min, nil
 }
 
-func (t *testProvider) Check(filename string, reader io.Reader) (interface{}, error) {
+func (t *testProvider) Check(filename string, reader io.Reader) ([]byte, error) {
 	if t.scanMax {
 		n, err := io.CopyN(io.Discard, reader, t.min)
 		assert.NoError(t.t, err)
@@ -52,8 +52,8 @@ func (t *testProvider) Check(filename string, reader io.Reader) (interface{}, er
 	return t.output, nil
 }
 
-func (t *testProvider) Render(interface{}) string {
-	return ""
+func (t *testProvider) Render([]byte) (string, error) {
+	return "", nil
 }
 
 type panicProvider struct {
@@ -63,19 +63,19 @@ func (p *panicProvider) MinimumBytes(typ, subtyp string) (int64, error) {
 	return 1, nil
 }
 
-func (p *panicProvider) Check(filename string, reader io.Reader) (interface{}, error) {
+func (p *panicProvider) Check(filename string, reader io.Reader) ([]byte, error) {
 	panic(errors.New("panic, lol"))
 }
 
-func (p *panicProvider) Render(interface{}) string {
-	return ""
+func (p *panicProvider) Render([]byte) (string, error) {
+	return "", nil
 }
 
 func TestLimitedRead(t *testing.T) {
 	store := newTestFS(t)
 	fill(t, store, "/1024", 1024)
 
-	manager, err := NewManager("gonative")
+	manager, err := NewManager(nil, "gonative")
 	assert.NoError(t, err)
 	manager.providers["test"] = &testProvider{
 		t:   t,
@@ -93,17 +93,17 @@ func TestMultiprocess(t *testing.T) {
 	store := newTestFS(t)
 	fill(t, store, "/1024", 1024)
 
-	manager, err := NewManager("gonative")
+	manager, err := NewManager(nil, "gonative")
 	assert.NoError(t, err)
 	manager.providers["test"] = &testProvider{
 		t:      t,
 		min:    512,
-		output: 9001,
+		output: []byte{9, 0, 0, 1},
 	}
 	manager.providers["test2"] = &testProvider{
 		t:      t,
 		min:    1024,
-		output: "Test output",
+		output: []byte("Test output"),
 	}
 	manager.providers["test3"] = &testProvider{
 		t:       t,
@@ -117,9 +117,9 @@ func TestMultiprocess(t *testing.T) {
 		assert.NoError(t, err)
 
 		assert.Len(t, out.Data, 3)
-		assert.Equal(t, 9001, out.Data["test"].Data)
+		assert.Equal(t, []byte{9, 0, 0, 1}, out.Data["test"].Data)
 		assert.NoError(t, out.Data["test"].Err)
-		assert.Equal(t, "Test output", out.Data["test2"].Data)
+		assert.Equal(t, []byte("Test output"), out.Data["test2"].Data)
 		assert.NoError(t, out.Data["test2"].Err)
 		assert.Equal(t, nil, out.Data["test3"].Data)
 		assert.NoError(t, out.Data["test3"].Err)
@@ -130,7 +130,7 @@ func TestPanic(t *testing.T) {
 	store := newTestFS(t)
 	fill(t, store, "/1024", 1024)
 
-	manager, err := NewManager("gonative")
+	manager, err := NewManager(nil, "gonative")
 	assert.NoError(t, err)
 	manager.providers["panic"] = &panicProvider{}
 

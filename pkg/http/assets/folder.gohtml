@@ -52,7 +52,7 @@
           add("mime", json.mime.type + "/" + json.mime.subtype);
 
           $.each(json.data, function(key, data) {
-            add(key, data.data);
+            add(key, data.human);
           });
         });
     };

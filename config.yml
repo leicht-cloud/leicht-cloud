@@ -19,7 +19,8 @@ fileinfo:
     - sha3-256
     - sha3-384
     - sha3-512
+    - plugin:imagesize
 storage:
   provider: local
   extra:
-    path: /tmp/go-cloud
+    path: /data/go-cloud

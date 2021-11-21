@@ -1,4 +1,4 @@
-//go:generate protoc -I . ./storage.proto --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative
+//go:generate protoc -I . ./fileinfo.proto --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative
 
 package plugin
 
@@ -8,13 +8,13 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/schoentoon/go-cloud/pkg/storage"
+	"github.com/schoentoon/go-cloud/pkg/fileinfo/types"
 	"github.com/sirupsen/logrus"
 	grpc "google.golang.org/grpc"
 )
 
 // This is meant to be called in the main() of your plugin
-func Start(storage storage.StorageProvider) (err error) {
+func Start(fileinfo types.FileInfoProvider) (err error) {
 	if os.Getenv("DEBUG") != "" {
 		logrus.SetLevel(logrus.DebugLevel)
 		logrus.SetReportCaller(true)
@@ -49,6 +49,6 @@ func Start(storage storage.StorageProvider) (err error) {
 		os.Exit(0)
 	}(server, c)
 
-	RegisterStorageProviderServer(server, NewStorageBridge(storage))
+	RegisterFileInfoProviderServer(server, NewFileinfoBridge(fileinfo))
 	return server.Serve(lis)
 }

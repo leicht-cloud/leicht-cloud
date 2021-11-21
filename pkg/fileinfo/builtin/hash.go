@@ -40,7 +40,7 @@ func (h *hashProvider) MinimumBytes(typ, subtyp string) (int64, error) {
 	return -1, nil
 }
 
-func (h *hashProvider) Check(filename string, reader io.Reader) (interface{}, error) {
+func (h *hashProvider) Check(filename string, reader io.Reader) ([]byte, error) {
 	out := h.hasher()
 	_, err := io.Copy(out, reader)
 	if err != nil {
@@ -50,8 +50,6 @@ func (h *hashProvider) Check(filename string, reader io.Reader) (interface{}, er
 	return out.Sum(nil), nil
 }
 
-func (h *hashProvider) Render(data interface{}) string {
-	raw := data.([]byte)
-
-	return fmt.Sprintf("%x", raw)
+func (h *hashProvider) Render(data []byte) (string, error) {
+	return fmt.Sprintf("%x", data), nil
 }

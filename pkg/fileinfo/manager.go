@@ -5,10 +5,14 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"strings"
 	"sync"
 
+	fileinfoPlugin "github.com/schoentoon/go-cloud/pkg/fileinfo/plugin"
 	"github.com/schoentoon/go-cloud/pkg/fileinfo/types"
+	"github.com/schoentoon/go-cloud/pkg/plugin"
 	"github.com/schoentoon/go-cloud/pkg/storage"
+	"github.com/sirupsen/logrus"
 )
 
 type Manager struct {
@@ -20,7 +24,7 @@ type Options struct {
 	Render bool
 }
 
-func NewManager(mimetypeProvider string, provider ...string) (*Manager, error) {
+func NewManager(pManager *plugin.Manager, mimetypeProvider string, provider ...string) (*Manager, error) {
 	out := &Manager{
 		providers: map[string]types.FileInfoProvider{},
 	}
@@ -32,11 +36,25 @@ func NewManager(mimetypeProvider string, provider ...string) (*Manager, error) {
 	out.mimeTypeProvider = mp
 
 	for _, name := range provider {
-		p, err := types.GetProvider(name)
-		if err != nil {
-			return nil, err
+		if strings.HasPrefix(name, "plugin:") {
+			name = strings.TrimPrefix(name, "plugin:")
+			conn, err := pManager.Start(name)
+			if err != nil {
+				return nil, err
+			}
+
+			provider, err := fileinfoPlugin.NewGrpcFileinfo(conn)
+			if err != nil {
+				return nil, err
+			}
+			out.providers[name] = provider
+		} else {
+			p, err := types.GetProvider(name)
+			if err != nil {
+				return nil, err
+			}
+			out.providers[name] = p
 		}
-		out.providers[name] = p
 	}
 
 	return out, nil
@@ -145,7 +163,12 @@ func (m *Manager) FileInfo(filename string, file storage.File, opts *Options, re
 				if !ok {
 					return nil, fmt.Errorf("No provider found called: %s", result.name)
 				}
-				out.Data[result.name] = types.Result{Data: provider.Render(result.data)}
+				str, err := provider.Render(result.data)
+				if err == nil {
+					out.Data[result.name] = types.Result{Human: str, Data: result.data}
+				} else {
+					logrus.Error(err)
+				}
 			} else {
 				out.Data[result.name] = types.Result{Data: result.data}
 			}
@@ -178,12 +201,12 @@ type checkTask struct {
 }
 
 type taskOut struct {
-	data interface{}
+	data []byte
 	err  error
 	name string
 }
 
-func (t *checkTask) Run(filename string, wg *sync.WaitGroup) (out interface{}, err error) {
+func (t *checkTask) Run(filename string, wg *sync.WaitGroup) (out []byte, err error) {
 	defer wg.Done()
 
 	defer func() {
