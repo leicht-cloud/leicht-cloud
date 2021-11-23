@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"testing"
@@ -52,8 +53,8 @@ func (t *testProvider) Check(filename string, reader io.Reader) ([]byte, error) 
 	return t.output, nil
 }
 
-func (t *testProvider) Render([]byte) (string, error) {
-	return "", nil
+func (t *testProvider) Render(d []byte) (string, error) {
+	return fmt.Sprintf("render: %s", d), nil
 }
 
 type panicProvider struct {
@@ -84,7 +85,7 @@ func TestLimitedRead(t *testing.T) {
 
 	file, err := store.File(context.Background(), &models.User{}, "/1024")
 	if assert.NoError(t, err) {
-		_, err := manager.FileInfo("/1024", file, &Options{}, "test")
+		_, err := manager.FileInfo("/1024", file, &Options{})
 		assert.NoError(t, err)
 	}
 }
@@ -113,15 +114,18 @@ func TestMultiprocess(t *testing.T) {
 
 	file, err := store.File(context.Background(), &models.User{}, "/1024")
 	if assert.NoError(t, err) {
-		out, err := manager.FileInfo("/1024", file, &Options{}, "test", "test2", "test3")
+		out, err := manager.FileInfo("/1024", file, &Options{Render: true}, "test", "test2", "test3")
 		assert.NoError(t, err)
 
 		count := 0
 
 		for info := range out.Channel {
 			assert.NoError(t, info.Err)
+			assert.NotEmpty(t, info.Human)
 			count++
 			switch info.Name {
+			case "mime":
+				continue
 			case "test":
 				assert.Equal(t, []byte{9, 0, 0, 1}, info.Data)
 			case "test2":
@@ -133,7 +137,7 @@ func TestMultiprocess(t *testing.T) {
 			}
 		}
 
-		assert.Equal(t, 3, count)
+		assert.Equal(t, 4, count)
 	}
 }
 
@@ -154,9 +158,12 @@ func TestPanic(t *testing.T) {
 
 		for info := range data.Channel {
 			count++
+			if info.Name == "mime" { // we don't really care to check the mime structure
+				continue
+			}
 			assert.Error(t, info.Err)
 			assert.Equal(t, "panic", info.Name)
 		}
-		assert.Equal(t, 1, count)
+		assert.Equal(t, 2, count)
 	}
 }

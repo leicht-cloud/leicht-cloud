@@ -71,7 +71,7 @@ func (h *fileInfoHandler) Serve(user *models.User, w http.ResponseWriter, r *htt
 			}
 		}
 	} else {
-		outputs := make(map[string]types.Result, 0)
+		outputs := make(map[string]types.Result)
 
 		for info := range out.Channel {
 			outputs[info.Name] = info
