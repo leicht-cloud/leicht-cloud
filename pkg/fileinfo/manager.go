@@ -6,7 +6,6 @@ import (
 	"io"
 	"io/ioutil"
 	"strings"
-	"sync"
 
 	fileinfoPlugin "github.com/schoentoon/go-cloud/pkg/fileinfo/plugin"
 	"github.com/schoentoon/go-cloud/pkg/fileinfo/types"
@@ -61,9 +60,9 @@ func NewManager(pManager *plugin.Manager, mimetypeProvider string, provider ...s
 }
 
 type Output struct {
-	Data     map[string]types.Result `json:"data"`
-	MimeType types.MimeType          `json:"mime"`
-	Filename string                  `json:"filename"`
+	Channel  <-chan types.Result `json:"-"`
+	MimeType types.MimeType      `json:"mime"`
+	Filename string              `json:"filename"`
 }
 
 func (m *Manager) FileInfo(filename string, file storage.File, opts *Options, requestedProviders ...string) (*Output, error) {
@@ -112,8 +111,9 @@ func (m *Manager) FileInfo(filename string, file storage.File, opts *Options, re
 		reader = io.LimitReader(reader, min)
 	}
 
+	ch := make(chan types.Result, len(providers)+1) // the + 1 is for the mime type
 	out := &Output{
-		Data:     make(map[string]types.Result, len(providers)),
+		Channel:  ch,
 		MimeType: *mime,
 		Filename: filename,
 	}
@@ -139,13 +139,11 @@ func (m *Manager) FileInfo(filename string, file storage.File, opts *Options, re
 		})
 	}
 
-	wg := sync.WaitGroup{}
-	wg.Add(len(tasks))
 	outCh := make(chan taskOut, len(providers))
 
 	for _, t := range tasks {
 		go func(ch chan<- taskOut, t *checkTask) {
-			data, err := t.Run(filename, &wg)
+			data, err := t.Run(filename)
 			ch <- taskOut{data: data, err: err, name: t.providerName}
 		}(outCh, t)
 	}
@@ -162,29 +160,39 @@ func (m *Manager) FileInfo(filename string, file storage.File, opts *Options, re
 		}
 	}()
 
-	for i := 0; i < len(providers); i++ {
-		result := <-outCh
-		if result.err != nil {
-			out.Data[result.name] = types.Result{Err: result.err}
-		} else {
-			if opts.Render {
-				provider, ok := m.providers[result.name]
-				if !ok {
-					return nil, fmt.Errorf("No provider found called: %s", result.name)
-				}
-				str, err := provider.Render(result.data)
-				if err == nil {
-					out.Data[result.name] = types.Result{Human: str, Data: result.data}
-				} else {
-					logrus.Error(err)
-				}
-			} else {
-				out.Data[result.name] = types.Result{Data: result.data}
-			}
-		}
+	ch <- types.Result{
+		Name:  "mime",
+		Data:  []byte(mime.String()),
+		Human: mime.String(),
+		Err:   nil,
 	}
 
-	wg.Wait()
+	go func(ch chan<- types.Result) {
+		for i := 0; i < len(providers); i++ {
+			result := <-outCh
+			if result.err != nil {
+				ch <- types.Result{Name: result.name, Err: result.err}
+			} else {
+				if opts.Render {
+					provider, ok := providers[result.name]
+					if !ok {
+						logrus.Errorf("No provider found called: %s", result.name)
+						continue
+					}
+					str, err := provider.Render(result.data)
+					if err == nil {
+						ch <- types.Result{Name: result.name, Human: str, Data: result.data}
+					} else {
+						logrus.Error(err)
+					}
+				} else {
+					ch <- types.Result{Name: result.name, Data: result.data}
+				}
+			}
+		}
+
+		close(ch)
+	}(ch)
 
 	return out, nil
 }
@@ -216,9 +224,7 @@ type taskOut struct {
 	name string
 }
 
-func (t *checkTask) Run(filename string, wg *sync.WaitGroup) (out []byte, err error) {
-	defer wg.Done()
-
+func (t *checkTask) Run(filename string) (out []byte, err error) {
 	defer func() {
 		if e := recover(); e != nil {
 			if er, ok := e.(error); ok {

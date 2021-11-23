@@ -35,26 +35,18 @@
       var offcanvas = new bootstrap.Offcanvas($('#offcanvasRight'));
       offcanvas.show();
 
-      $.get("/api/fileinfo?filename=" + file)
-        .done(function(data) {
-          var json = JSON.parse(data);
-          if (json.filename != file) {
-            return;
-          }
+      var add = function(title, text) {
+        var element = $('<div class="list-group-item justify-content-between text-break" style="font-family:monospace;"></div>').text(text);
+        var title = $('<div class="fw-bold"></div>').text(title);
+        element.prepend(title);
+        body.append(element);
+      };
 
-          var add = function(title, text) {
-            var element = $('<div class="list-group-item justify-content-between text-break" style="font-family:monospace;"></div>').text(text);
-            var title = $('<div class="fw-bold"></div>').text(title);
-            element.prepend(title);
-            body.append(element);
-          };
-
-          add("mime", json.mime.type + "/" + json.mime.subtype);
-
-          $.each(json.data, function(key, data) {
-            add(key, data.human);
-          });
-        });
+      var socket = new WebSocket("ws://" + document.location.host + "/api/fileinfo?filename=" + file);
+      socket.onmessage = function(event) {
+        var json = JSON.parse(event.data);
+        add(json.name, json.human);
+      };
     };
 
     $(document).ready(function () {

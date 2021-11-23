@@ -116,13 +116,24 @@ func TestMultiprocess(t *testing.T) {
 		out, err := manager.FileInfo("/1024", file, &Options{}, "test", "test2", "test3")
 		assert.NoError(t, err)
 
-		assert.Len(t, out.Data, 3)
-		assert.Equal(t, []byte{9, 0, 0, 1}, out.Data["test"].Data)
-		assert.NoError(t, out.Data["test"].Err)
-		assert.Equal(t, []byte("Test output"), out.Data["test2"].Data)
-		assert.NoError(t, out.Data["test2"].Err)
-		assert.Equal(t, []byte(nil), out.Data["test3"].Data)
-		assert.NoError(t, out.Data["test3"].Err)
+		count := 0
+
+		for info := range out.Channel {
+			assert.NoError(t, info.Err)
+			count++
+			switch info.Name {
+			case "test":
+				assert.Equal(t, []byte{9, 0, 0, 1}, info.Data)
+			case "test2":
+				assert.Equal(t, []byte("Test output"), info.Data)
+			case "test3":
+				assert.Equal(t, []byte(nil), info.Data)
+			default:
+				assert.Failf(t, "Unexpected info", "Unexpected info structure %#v", info)
+			}
+		}
+
+		assert.Equal(t, 3, count)
 	}
 }
 
@@ -138,6 +149,14 @@ func TestPanic(t *testing.T) {
 	if assert.NoError(t, err) {
 		data, err := manager.FileInfo("/1024", file, &Options{}, "panic")
 		assert.NoError(t, err)
-		assert.Error(t, data.Data["panic"].Err)
+
+		count := 0
+
+		for info := range data.Channel {
+			count++
+			assert.Error(t, info.Err)
+			assert.Equal(t, "panic", info.Name)
+		}
+		assert.Equal(t, 1, count)
 	}
 }
