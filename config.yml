@@ -24,3 +24,6 @@ storage:
   provider: local
   extra:
     path: /data/go-cloud
+prometheus:
+  enabled: true
+  address: "127.0.0.1:9001"

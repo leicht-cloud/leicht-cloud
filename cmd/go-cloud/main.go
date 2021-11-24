@@ -43,6 +43,12 @@ func main() {
 
 	auth := auth.NewProvider(db)
 
+	prom, err := config.Prometheus.Create()
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	defer prom.Close()
+
 	logrus.Info("Initializing plugin manager")
 	pluginManager, err := config.Plugin.CreateManager()
 	if err != nil {
@@ -51,7 +57,7 @@ func main() {
 	defer pluginManager.Close()
 
 	logrus.Infof("Initializing storage provider %s", config.Storage.Provider)
-	storage, err := config.Storage.CreateProvider(pluginManager)
+	storage, err := prom.WrapStorage(config.Storage.CreateProvider(pluginManager))
 	if err != nil {
 		logrus.Fatal(err)
 	}

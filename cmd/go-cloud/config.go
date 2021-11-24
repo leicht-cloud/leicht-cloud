@@ -5,6 +5,7 @@ import (
 
 	"github.com/schoentoon/go-cloud/pkg/fileinfo"
 	"github.com/schoentoon/go-cloud/pkg/plugin"
+	"github.com/schoentoon/go-cloud/pkg/prometheus"
 	storage "github.com/schoentoon/go-cloud/pkg/storage/utils"
 	"gopkg.in/yaml.v2"
 )
@@ -14,9 +15,10 @@ type Config struct {
 	Debug bool   `yaml:"debug"`
 	DB    string `yaml:"db"`
 
-	Storage  storage.Config  `yaml:"storage"`
-	Plugin   plugin.Config   `yaml:"plugin"`
-	FileInfo fileinfo.Config `yaml:"fileinfo"`
+	Storage    storage.Config    `yaml:"storage"`
+	Plugin     plugin.Config     `yaml:"plugin"`
+	FileInfo   fileinfo.Config   `yaml:"fileinfo"`
+	Prometheus prometheus.Config `yaml:"prometheus"`
 }
 
 // ReadConfig reads a file into the config structure
