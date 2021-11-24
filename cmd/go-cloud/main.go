@@ -29,7 +29,7 @@ func main() {
 		logrus.SetReportCaller(true)
 	}
 
-	logrus.Infof("Initialing database: %+v", config.DB)
+	logrus.Infof("Initializing database: %+v", config.DB)
 	db, err := gorm.Open(sqlite.Open(config.DB), &gorm.Config{})
 	if err != nil {
 		logrus.Fatal(err)
@@ -43,15 +43,21 @@ func main() {
 
 	auth := auth.NewProvider(db)
 
-	logrus.Info("Initialing plugin manager")
+	logrus.Info("Initializing plugin manager")
 	pluginManager, err := config.Plugin.CreateManager()
 	if err != nil {
 		logrus.Fatal(err)
 	}
 	defer pluginManager.Close()
 
-	logrus.Infof("Initialing storage provider %s", config.Storage.Provider)
+	logrus.Infof("Initializing storage provider %s", config.Storage.Provider)
 	storage, err := config.Storage.CreateProvider(pluginManager)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
+	logrus.Infof("Initializing file info providers")
+	fileinfo, err := config.FileInfo.CreateProvider(pluginManager)
 	if err != nil {
 		logrus.Fatal(err)
 	}
@@ -60,7 +66,7 @@ func main() {
 	signal.Notify(c, os.Interrupt)
 
 	logrus.Info("Initialing http server")
-	server, err := gchttp.InitHttpServer(db, auth, storage, pluginManager)
+	server, err := gchttp.InitHttpServer(db, auth, storage, pluginManager, fileinfo)
 	if err != nil {
 		logrus.Fatal(err)
 	}

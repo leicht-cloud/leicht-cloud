@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package gocloud.fileinfo.plugin;
+
+option go_package = "github.com/schoentoon/go-cloud/pkg/fileinfo/plugin";
+
+// Interface exported by the server.
+service FileInfoProvider {
+    rpc MinimumBytes(MinimumBytesQuery) returns (MinimumBytesResponse) {};
+
+    rpc Check(stream CheckQuery) returns (CheckResponse) {};
+
+    rpc Render(RenderQuery) returns (RenderResponse) {};
+}
+
+message Error {
+    string message = 1;
+};
+
+message MinimumBytesQuery {
+    string type = 1;
+    string subtype = 2;
+};
+
+message MinimumBytesResponse {
+    int64 length = 1;
+    Error error = 2;
+};
+
+message CheckQuery {
+    string filename = 1;
+    bytes data = 2;
+    bool EOF = 3;
+};
+
+message CheckResponse {
+    bytes data = 1;
+    Error error = 2;
+};
+
+message RenderQuery {
+    bytes data = 1;
+};
+
+message RenderResponse {
+    string content = 1;
+    string title = 2;
+    Error error = 3;
+};

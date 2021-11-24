@@ -51,13 +51,21 @@ func runPlugins(tb testing.TB) {
 			continue
 		}
 
-		switch tb.(type) {
+		manifest, err := plugin.ParseManifestFromFile(entry.Name())
+		if assert.NoError(tb, err) {
+			// if we're not of type storage, we skip
+			if manifest.Type != "storage" {
+				continue
+			}
+		} else {
+			continue
+		}
+
+		switch tb := tb.(type) {
 		case *testing.T:
-			t := tb.(*testing.T)
-			t.Run(entry.Name(), func(t *testing.T) { testPlugin(t, pluginManager, entry.Name()) })
+			tb.Run(entry.Name(), func(t *testing.T) { testPlugin(t, pluginManager, entry.Name()) })
 		case *testing.B:
-			b := tb.(*testing.B)
-			b.Run(entry.Name(), func(t *testing.B) { benchmarkPlugin(b, pluginManager, entry.Name()) })
+			tb.Run(entry.Name(), func(b *testing.B) { benchmarkPlugin(b, pluginManager, entry.Name()) })
 		}
 	}
 }

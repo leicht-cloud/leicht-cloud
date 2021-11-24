@@ -106,7 +106,6 @@ func (s *BridgeStorageProviderServer) ListDirectory(req *ListDirectoryQuery, srv
 		err = srv.Send(&FileInfo{
 			Name:      f.Name,
 			FullPath:  f.FullPath,
-			MimeType:  f.MimeType,
 			CreatedAt: uint64(f.CreatedAt.Unix()),
 			UpdatedAt: uint64(f.UpdatedAt.Unix()),
 			Size:      f.Size,

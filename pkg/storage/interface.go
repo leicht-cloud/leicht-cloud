@@ -11,7 +11,6 @@ import (
 type FileInfo struct {
 	Name      string    `json:"name"`
 	FullPath  string    `json:"full_path"`
-	MimeType  string    `json:"mime_type"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 	Size      uint64    `json:"size"`

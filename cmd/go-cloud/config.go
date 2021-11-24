@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 
+	"github.com/schoentoon/go-cloud/pkg/fileinfo"
 	"github.com/schoentoon/go-cloud/pkg/plugin"
 	storage "github.com/schoentoon/go-cloud/pkg/storage/utils"
 	"gopkg.in/yaml.v2"
@@ -13,8 +14,9 @@ type Config struct {
 	Debug bool   `yaml:"debug"`
 	DB    string `yaml:"db"`
 
-	Storage storage.Config `yaml:"storage"`
-	Plugin  plugin.Config  `yaml:"plugin"`
+	Storage  storage.Config  `yaml:"storage"`
+	Plugin   plugin.Config   `yaml:"plugin"`
+	FileInfo fileinfo.Config `yaml:"fileinfo"`
 }
 
 // ReadConfig reads a file into the config structure

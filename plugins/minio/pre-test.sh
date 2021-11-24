@@ -17,6 +17,7 @@ if [ -z $TMPDIR ]; then
     exit 1
 fi
 
+docker rm -f minio_test
 
 docker run -d \
     --name minio_test \

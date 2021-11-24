@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/schoentoon/go-cloud/pkg/auth"
+	"github.com/schoentoon/go-cloud/pkg/fileinfo"
 	"github.com/schoentoon/go-cloud/pkg/http/admin"
 	"github.com/schoentoon/go-cloud/pkg/http/api"
 	"github.com/schoentoon/go-cloud/pkg/http/template"
@@ -17,6 +18,7 @@ func InitHttpServer(
 	authProvider *auth.Provider,
 	storage storage.StorageProvider,
 	pluginManager *plugin.Manager,
+	fileinfo *fileinfo.Manager,
 ) (*http.Server, error) {
 	assets, err := initStatic()
 	if err != nil {
@@ -31,7 +33,7 @@ func InitHttpServer(
 	mux.Handle("/", &rootHandler{DB: db, StaticHandler: templateHandler})
 	mux.Handle("/login", &loginHandler{DB: db, Auth: authProvider, StaticHandler: templateHandler})
 	mux.Handle("/signup", &signupHandler{Assets: assets, DB: db, Storage: storage})
-	api.Init(mux, db, storage)
+	api.Init(mux, db, storage, fileinfo)
 	admin.Init(mux, templateHandler, pluginManager)
 
 	out := &http.Server{

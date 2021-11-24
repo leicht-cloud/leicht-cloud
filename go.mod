@@ -39,3 +39,11 @@ require (
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gvisor.dev/gvisor v0.0.0-20211103010849-9d6c9e4461c3 // indirect
 )
+
+require (
+	github.com/Ichbinjoe/fanoutwriter v0.0.0-20190705223123-bc6abbd56c1f
+	github.com/h2non/filetype v1.1.1 // indirect
+	go.uber.org/multierr v1.7.0
+)
+
+require go.uber.org/atomic v1.7.0 // indirect

@@ -1,0 +1,106 @@
+syntax = "proto3";
+
+package gocloud.storage.plugin;
+
+option go_package = "github.com/schoentoon/go-cloud/pkg/storage/plugin";
+
+// Interface exported by the server.
+service StorageProvider {
+  rpc Configure(ConfigData) returns (Error) {}
+
+  rpc InitUser(User) returns (Error) {}
+  
+  rpc MkDir(MkdirQuery) returns (Error) {}
+
+  rpc Move(MoveQuery) returns (Error) {}
+
+  rpc ListDirectory(ListDirectoryQuery) returns (stream FileInfo) {}
+
+  rpc OpenFile(OpenFileQuery) returns (OpenFileReply) {}
+
+  rpc CloseFile(CloseFileQuery) returns (Error) {}
+
+  rpc WriteFile(WriteFileQuery) returns (WriteFileReply) {}
+
+  rpc ReadFile(ReadFileQuery) returns (stream ReadFileReply) {}
+
+  rpc Delete(DeleteQuery) returns (Error) {}
+}
+
+message ConfigData {
+    bytes yaml = 1;
+};
+
+// This basically maps to the FileInfo struct
+message FileInfo {
+    string name = 1;
+    string fullPath = 2;
+    uint64 createdAt = 3;
+    uint64 updatedAt = 4;
+    uint64 size = 5;
+    bool directory = 6;
+};
+
+// This sort of maps to the User struct, although we only give the id as that should be the only relevant thing.
+message User {
+    uint64 id = 1;
+};
+
+message Error {
+    string message = 1;
+};
+
+message MkdirQuery {
+    User user = 1;
+    string path = 2;
+};
+
+message MoveQuery {
+    User user = 1;
+    string src = 2;
+    string dst = 3;
+};
+
+message ListDirectoryQuery {
+    User user = 1;
+    string path = 2;
+};
+
+message OpenFileQuery {
+    User user = 1;
+    string fullPath = 2;
+};
+
+message OpenFileReply {
+    int32 id = 1;
+    Error error = 2;
+};
+
+message CloseFileQuery {
+    int32 id = 1;
+};
+
+message WriteFileQuery {
+    int32 id = 1;
+    bytes data = 2;
+};
+
+message WriteFileReply {
+    int32 size_written = 1;
+    Error error = 2;
+};
+
+message ReadFileQuery {
+    int32 id = 1;
+};
+
+message ReadFileReply {
+    bytes data = 1;
+    bool EOF = 2;
+    Error error = 3;
+};
+
+message DeleteQuery {
+    User user = 1;
+    string fullPath = 2;
+};

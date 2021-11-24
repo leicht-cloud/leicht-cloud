@@ -11,7 +11,7 @@ import (
 )
 
 // the valid plugin types
-var types = []string{"storage"}
+var types = []string{"storage", "fileinfo"}
 
 var (
 	ErrNoName = errors.New("No name specified")
