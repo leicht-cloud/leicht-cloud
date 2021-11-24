@@ -20,7 +20,8 @@
 
     function alert(message, type) {
       var wrapper = document.createElement('div')
-      wrapper.innerHTML = '<div class="alert alert-' + type + ' alert-dismissible" role="alert">' + message + '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>'
+      wrapper.innerHTML = '<div class="alert alert-' + type + ' alert-dismissible" role="alert">' + message +
+        '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>'
 
       var alertPlaceholder = document.getElementById('liveAlertPlaceholder');
       alertPlaceholder.append(wrapper)
@@ -32,13 +33,22 @@
       var body = $('#fileinfoBody');
       body.empty();
 
+      var download = $('#offcanvasDownloadLink');
+      download.attr('href', document.location.protocol + '//' + document.location.host + '/api/download?filename=' +
+        file);
+      download.attr('download', document.location.protocol + '//' + document.location.host + '/api/download?filename=' +
+        file);
+
       var offcanvas = new bootstrap.Offcanvas($('#offcanvasRight'));
       offcanvas.show();
 
-      var add = function(title, text, name) {
-        var element = $('<div class="list-group-item justify-content-between text-break" style="font-family:monospace;"></div>').text(text);
+      var add = function (title, text, name) {
+        var element = $(
+            '<div class="list-group-item justify-content-between text-break" style="font-family:monospace;"></div>')
+          .text(text);
         var title = $('<div class="fw-bold"></div>').text(title);
-        var info = $(`<a data-bs-toggle="tooltip" data-bs-placement="left" data-bs-original-title="Provided by ` + name + `"> </a>`);
+        var info = $(`<a data-bs-toggle="tooltip" data-bs-placement="left" data-bs-original-title="Provided by ` +
+          name + `"> </a>`);
         new bootstrap.Tooltip(info);
         // https://icons.getbootstrap.com/icons/info/
         var icon = $(`<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-info-circle" viewBox="0 0 16 16">
@@ -53,7 +63,7 @@
       };
 
       var socket = new WebSocket("ws://" + document.location.host + "/api/fileinfo?filename=" + file);
-      socket.onmessage = function(event) {
+      socket.onmessage = function (event) {
         var json = JSON.parse(event.data);
         if (json.title != "") {
           add(json.title, json.human, json.name);
@@ -65,11 +75,10 @@
 
     $(document).ready(function () {
       var datatable = $('#directory').DataTable({
-        "columnDefs": [
-          {
-            "render": function(data, type, row) {
+        "columnDefs": [{
+            "render": function (data, type, row) {
               console.log(data);
-              return '<a href="#" onclick="fileInfo(\'' + data + '\');">' + data +  '</a>';
+              return '<a href="#" onclick="fileInfo(\'' + data + '\');">' + data + '</a>';
             },
             "targets": 0 // name
           },
@@ -89,10 +98,10 @@
       });
 
       $.get("/api/list")
-        .fail(function(xhr, status, error) {
+        .fail(function (xhr, status, error) {
           alert(xhr.responseText, 'danger');
         })
-        .done(function(data) {
+        .done(function (data) {
           data = data.split('\n');
           data.forEach(function (data) {
             json = JSON.parse(data);
@@ -133,14 +142,25 @@
     </div>
   </div>
 
-  <div class="offcanvas offcanvas-end" data-bs-scroll="true" data-bs-backdrop="false" tabindex="-1" id="offcanvasRight" aria-labelledby="offcanvasRightLabel">
+  <div class="offcanvas offcanvas-end" data-bs-scroll="true" data-bs-backdrop="false" tabindex="-1" id="offcanvasRight"
+    aria-labelledby="offcanvasRightLabel">
     <div class="list-group list-group-flush container-fluid vh-100">
       <div class="offcanvas-header">
         <h5 class="offcanvas-title" id="offcanvasRightLabel">Offcanvas</h5>
+        <a id="offcanvasDownloadLink">
+          <!-- https://icons.getbootstrap.com/icons/download/ -->
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-download"
+            viewBox="0 0 16 16">
+            <path
+              d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z" />
+            <path
+              d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z" />
+          </svg>
+        </a>
         <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
       </div>
-        <ul id="fileinfoBody" class="offcanvas-body">
-        </ul>
+      <ul id="fileinfoBody" class="offcanvas-body">
+      </ul>
     </div>
   </div>
 </body>
