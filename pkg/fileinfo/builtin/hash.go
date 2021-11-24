@@ -15,24 +15,26 @@ import (
 )
 
 func init() {
-	fileinfo.RegisterProvider("md5", newHashProvider(func() hash.Hash { return md5.New() }))
-	fileinfo.RegisterProvider("sha1", newHashProvider(func() hash.Hash { return sha1.New() }))
-	fileinfo.RegisterProvider("sha256", newHashProvider(func() hash.Hash { return sha256.New() }))
-	fileinfo.RegisterProvider("sha384", newHashProvider(func() hash.Hash { return sha512.New384() }))
-	fileinfo.RegisterProvider("sha512", newHashProvider(func() hash.Hash { return sha512.New() }))
-	fileinfo.RegisterProvider("sha3-224", newHashProvider(func() hash.Hash { return sha3.New224() }))
-	fileinfo.RegisterProvider("sha3-256", newHashProvider(func() hash.Hash { return sha3.New256() }))
-	fileinfo.RegisterProvider("sha3-384", newHashProvider(func() hash.Hash { return sha3.New384() }))
-	fileinfo.RegisterProvider("sha3-512", newHashProvider(func() hash.Hash { return sha3.New512() }))
+	fileinfo.RegisterProvider("md5", newHashProvider("MD5", func() hash.Hash { return md5.New() }))
+	fileinfo.RegisterProvider("sha1", newHashProvider("SHA1", func() hash.Hash { return sha1.New() }))
+	fileinfo.RegisterProvider("sha256", newHashProvider("SHA256", func() hash.Hash { return sha256.New() }))
+	fileinfo.RegisterProvider("sha384", newHashProvider("SHA384", func() hash.Hash { return sha512.New384() }))
+	fileinfo.RegisterProvider("sha512", newHashProvider("SHA512", func() hash.Hash { return sha512.New() }))
+	fileinfo.RegisterProvider("sha3-224", newHashProvider("SHA3-224", func() hash.Hash { return sha3.New224() }))
+	fileinfo.RegisterProvider("sha3-256", newHashProvider("SHA3-256", func() hash.Hash { return sha3.New256() }))
+	fileinfo.RegisterProvider("sha3-384", newHashProvider("SHA3-384", func() hash.Hash { return sha3.New384() }))
+	fileinfo.RegisterProvider("sha3-512", newHashProvider("SHA3-512", func() hash.Hash { return sha3.New512() }))
 }
 
 type hashProvider struct {
 	hasher func() hash.Hash
+	title  string
 }
 
-func newHashProvider(fn func() hash.Hash) *hashProvider {
+func newHashProvider(title string, fn func() hash.Hash) *hashProvider {
 	return &hashProvider{
 		hasher: fn,
+		title:  title,
 	}
 }
 
@@ -50,6 +52,6 @@ func (h *hashProvider) Check(filename string, reader io.Reader) ([]byte, error) 
 	return out.Sum(nil), nil
 }
 
-func (h *hashProvider) Render(data []byte) (string, error) {
-	return fmt.Sprintf("%x", data), nil
+func (h *hashProvider) Render(data []byte) (string, string, error) {
+	return fmt.Sprintf("%x", data), h.title, nil
 }

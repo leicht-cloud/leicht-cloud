@@ -43,6 +43,7 @@ message RenderQuery {
 };
 
 message RenderResponse {
-    string output = 1;
-    Error error = 2;
+    string content = 1;
+    string title = 2;
+    Error error = 3;
 };

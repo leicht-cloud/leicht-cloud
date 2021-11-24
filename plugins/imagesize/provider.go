@@ -43,11 +43,11 @@ func (is *ImageSize) Check(filename string, reader io.Reader) ([]byte, error) {
 	return json.Marshal(out)
 }
 
-func (is *ImageSize) Render(data []byte) (string, error) {
+func (is *ImageSize) Render(data []byte) (string, string, error) {
 	var cfg Size
 	err := json.Unmarshal(data, &cfg)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
-	return fmt.Sprintf("height: %d, width: %d", cfg.Height, cfg.Width), nil
+	return fmt.Sprintf("height: %d, width: %d", cfg.Height, cfg.Width), "Image Size", nil
 }

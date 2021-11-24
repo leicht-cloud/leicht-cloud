@@ -53,8 +53,8 @@ func (t *testProvider) Check(filename string, reader io.Reader) ([]byte, error) 
 	return t.output, nil
 }
 
-func (t *testProvider) Render(d []byte) (string, error) {
-	return fmt.Sprintf("render: %s", d), nil
+func (t *testProvider) Render(d []byte) (string, string, error) {
+	return fmt.Sprintf("render: %s", d), "title", nil
 }
 
 type panicProvider struct {
@@ -68,8 +68,8 @@ func (p *panicProvider) Check(filename string, reader io.Reader) ([]byte, error)
 	panic(errors.New("panic, lol"))
 }
 
-func (p *panicProvider) Render([]byte) (string, error) {
-	return "", nil
+func (p *panicProvider) Render([]byte) (string, string, error) {
+	return "", "", nil
 }
 
 func TestLimitedRead(t *testing.T) {

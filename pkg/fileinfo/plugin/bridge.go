@@ -113,14 +113,15 @@ func (s *BridgeFileinfoProviderServer) Check(srv FileInfoProvider_CheckServer) e
 }
 
 func (s *BridgeFileinfoProviderServer) Render(_ context.Context, req *RenderQuery) (*RenderResponse, error) {
-	out, err := s.FileInfo.Render(req.GetData())
+	content, title, err := s.FileInfo.Render(req.GetData())
 	if err != nil {
 		return &RenderResponse{
 			Error: toError(err),
 		}, nil
 	}
 	return &RenderResponse{
-		Output: out,
+		Content: content,
+		Title:   title,
 	}, nil
 }
 

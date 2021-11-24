@@ -44,7 +44,7 @@ type FileInfoProvider interface {
 	MinimumBytes(typ, subtyp string) (int64, error)
 
 	Check(filename string, reader io.Reader) ([]byte, error)
-	Render(data []byte) (string, error)
+	Render(data []byte) (string, string, error)
 }
 
 type MimeTypeProvider interface {
@@ -66,5 +66,6 @@ type Result struct {
 	Name  string `json:"name"`
 	Data  []byte `json:"data"`
 	Human string `json:"human"`
+	Title string `json:"title"`
 	Err   error  `json:"error,omitempty"`
 }

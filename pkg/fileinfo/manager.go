@@ -171,7 +171,10 @@ func (m *Manager) FileInfo(filename string, file storage.File, opts *Options, re
 		for i := 0; i < len(providers); i++ {
 			result := <-outCh
 			if result.err != nil {
-				ch <- types.Result{Name: result.name, Err: result.err}
+				ch <- types.Result{
+					Name: result.name,
+					Err:  result.err,
+				}
 			} else {
 				if opts.Render {
 					provider, ok := providers[result.name]
@@ -179,14 +182,22 @@ func (m *Manager) FileInfo(filename string, file storage.File, opts *Options, re
 						logrus.Errorf("No provider found called: %s", result.name)
 						continue
 					}
-					str, err := provider.Render(result.data)
+					content, title, err := provider.Render(result.data)
 					if err == nil {
-						ch <- types.Result{Name: result.name, Human: str, Data: result.data}
+						ch <- types.Result{
+							Name:  result.name,
+							Human: content,
+							Title: title,
+							Data:  result.data,
+						}
 					} else {
 						logrus.Error(err)
 					}
 				} else {
-					ch <- types.Result{Name: result.name, Data: result.data}
+					ch <- types.Result{
+						Name: result.name,
+						Data: result.data,
+					}
 				}
 			}
 		}

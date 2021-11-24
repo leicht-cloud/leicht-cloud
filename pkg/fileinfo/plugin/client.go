@@ -158,12 +158,12 @@ func (s *GrpcFileinfo) Check(filename string, reader io.Reader) ([]byte, error) 
 	}
 }
 
-func (s *GrpcFileinfo) Render(data []byte) (string, error) {
+func (s *GrpcFileinfo) Render(data []byte) (string, string, error) {
 	resp, err := s.Client.Render(context.Background(), &RenderQuery{Data: data})
 	err = toError2(resp.GetError(), err)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
-	return resp.GetOutput(), nil
+	return resp.GetContent(), resp.GetTitle(), nil
 }
