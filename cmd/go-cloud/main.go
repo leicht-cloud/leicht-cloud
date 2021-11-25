@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/schoentoon/go-cloud/pkg/auth"
 	gchttp "github.com/schoentoon/go-cloud/pkg/http"
 	"github.com/schoentoon/go-cloud/pkg/models"
 
@@ -41,7 +40,10 @@ func main() {
 		logrus.Fatal(err)
 	}
 
-	auth := auth.NewProvider(db)
+	auth, err := config.Auth.Create(db)
+	if err != nil {
+		logrus.Fatal(err)
+	}
 
 	logrus.Info("Initializing plugin manager")
 	pluginManager, err := config.Plugin.CreateManager()

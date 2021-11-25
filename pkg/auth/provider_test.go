@@ -21,7 +21,12 @@ func setupProvider(t *testing.T) (*gorm.DB, *Provider) {
 		t.Fatal(err)
 	}
 
-	return db, NewProvider(db)
+	provider, err := (&Config{}).Create(db)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return db, provider
 }
 
 func TestAuthenticate(t *testing.T) {

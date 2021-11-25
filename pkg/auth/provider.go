@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"bytes"
 	"crypto/ed25519"
 	"crypto/rand"
 	"errors"
@@ -8,6 +9,8 @@ import (
 	"net/http"
 
 	"github.com/schoentoon/go-cloud/pkg/models"
+	"github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v3"
 
 	"github.com/golang-jwt/jwt"
 	"gorm.io/gorm"
@@ -20,18 +23,39 @@ type Provider struct {
 	privateKey ed25519.PrivateKey
 }
 
-func NewProvider(db *gorm.DB) *Provider {
-	// TODO: We still want a way to store a key in the config, so cookies remain valid accross restarts
-	publicKey, privateKey, err := ed25519.GenerateKey(rand.Reader)
-	if err != nil {
-		panic(err)
+type Config struct {
+	PrivateKey string `yaml:"private_key"`
+}
+
+func (c *Config) Create(db *gorm.DB) (*Provider, error) {
+	if c.PrivateKey == "" {
+		logrus.Warn("No key found to sign cookies with, generating one for you")
+		publicKey, privateKey, err := ed25519.GenerateKey(rand.Reader)
+		if err != nil {
+			return nil, err
+		}
+
+		buf := bytes.Buffer{}
+		err = yaml.NewEncoder(&buf).Encode(struct{ Auth Config }{Auth: Config{PrivateKey: string(privateKey)}})
+		if err != nil {
+			return nil, err
+		}
+		logrus.Infof("Consider adding the following to your configuration\n%s", buf.String())
+
+		return &Provider{
+			DB:         db,
+			publicKey:  publicKey,
+			privateKey: privateKey,
+		}, nil
 	}
+
+	privateKey := ed25519.PrivateKey([]byte(c.PrivateKey))
 
 	return &Provider{
 		DB:         db,
-		publicKey:  publicKey,
+		publicKey:  privateKey.Public().(ed25519.PublicKey),
 		privateKey: privateKey,
-	}
+	}, nil
 }
 
 type UserClaims struct {
