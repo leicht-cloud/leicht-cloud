@@ -287,6 +287,8 @@ gorm.io/driver/sqlite v1.2.4/go.mod h1:n8/CTEIEmo7lKrehQI4pd+rz6O514tMkBeCAR5UTX
 gorm.io/gorm v1.22.2/go.mod h1:F+OptMscr0P2F2qU97WT1WimdH9GaQPoDW7AYd5i2Y0=
 gorm.io/gorm v1.22.3 h1:/JS6z+GStEQvJNW3t1FTwJwG/gZ+A7crFdRqtvG5ehA=
 gorm.io/gorm v1.22.3/go.mod h1:F+OptMscr0P2F2qU97WT1WimdH9GaQPoDW7AYd5i2Y0=
+gorm.io/plugin/prometheus v0.0.0-20211123021611-a2bccbfb6cbf h1:hTz5GCuL08+iPz3olGUjegKuibKFhnejX5IZ9waB6YI=
+gorm.io/plugin/prometheus v0.0.0-20211123021611-a2bccbfb6cbf/go.mod h1:lX9EAvVG6sEfY7edl7fZ5FODtUDOu40N5HraOAI6/ms=
 gotest.tools/v3 v3.0.3 h1:4AuOwCGf4lLR9u3YOe2awrHygurzhO/HeQ6laiA6Sx0=
 gvisor.dev/gvisor v0.0.0-20211103010849-9d6c9e4461c3 h1:Uj0PhXnDSgqTXND4UHsH1/Dg/fJzy5WhC7zwV65KVdA=
 gvisor.dev/gvisor v0.0.0-20211103010849-9d6c9e4461c3/go.mod h1:btyTBPTxT8AFMvW7yctFJ2nPCEDWZLpmKQEZ0gG+bbQ=

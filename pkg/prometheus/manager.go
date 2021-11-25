@@ -9,6 +9,8 @@ import (
 	"github.com/schoentoon/go-cloud/pkg/fileinfo/types"
 	"github.com/schoentoon/go-cloud/pkg/storage"
 	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
+	gormprom "gorm.io/plugin/prometheus"
 )
 
 type Manager struct {
@@ -100,4 +102,12 @@ func (m *Manager) WrapFileInfo(fileinfo types.FileInfoProvider, name string) typ
 	}
 
 	return m.newWrappedFileInfo(fileinfo, name)
+}
+
+func (m *Manager) WrapDB(db *gorm.DB) error {
+	if !m.enabled {
+		return nil
+	}
+
+	return db.Use(gormprom.New(gormprom.Config{}))
 }

@@ -49,6 +49,11 @@ func main() {
 	}
 	defer prom.Close()
 
+	err = prom.WrapDB(db)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
 	logrus.Info("Initializing plugin manager")
 	pluginManager, err := config.Plugin.CreateManager()
 	if err != nil {
