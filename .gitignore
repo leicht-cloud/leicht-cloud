@@ -1,7 +1,15 @@
 pkg/http/assets/css/
 pkg/http/assets/js/
-./go-cloud
+
+# binaries
+/go-cloud
+/build-plugin
+
+# files to help with testing
 *.db
 tmp/
+*.yml
+!config.yml
 
+# generated
 *.pb.go
