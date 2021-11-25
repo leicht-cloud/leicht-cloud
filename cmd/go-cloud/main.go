@@ -63,7 +63,7 @@ func main() {
 	}
 
 	logrus.Infof("Initializing file info providers")
-	fileinfo, err := config.FileInfo.CreateProvider(pluginManager)
+	fileinfo, err := config.FileInfo.CreateProvider(pluginManager, prom)
 	if err != nil {
 		logrus.Fatal(err)
 	}

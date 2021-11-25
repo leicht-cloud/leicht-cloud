@@ -4,7 +4,9 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/schoentoon/go-cloud/pkg/fileinfo/types"
 	"github.com/schoentoon/go-cloud/pkg/storage"
 	"github.com/sirupsen/logrus"
 )
@@ -14,6 +16,8 @@ type Manager struct {
 	address string
 
 	listener net.Listener
+
+	promCheck, promRender *prometheus.SummaryVec
 }
 
 func newManager(cfg *Config) (*Manager, error) {
@@ -26,6 +30,17 @@ func newManager(cfg *Config) (*Manager, error) {
 	out := &Manager{
 		enabled: true,
 		address: cfg.Address,
+
+		promCheck: prometheus.NewSummaryVec(
+			prometheus.SummaryOpts{
+				Name: "check",
+			}, []string{"provider"},
+		),
+		promRender: prometheus.NewSummaryVec(
+			prometheus.SummaryOpts{
+				Name: "render",
+			}, []string{"provider"},
+		),
 	}
 
 	err := out.start()
@@ -54,6 +69,13 @@ func (m *Manager) start() error {
 		}
 	}(listener)
 
+	registry := prometheus.WrapRegistererWithPrefix("fileinfo_", prometheus.DefaultRegisterer)
+
+	registry.MustRegister(
+		m.promCheck,
+		m.promRender,
+	)
+
 	return nil
 }
 
@@ -70,4 +92,12 @@ func (m *Manager) WrapStorage(store storage.StorageProvider, err error) (storage
 	}
 
 	return newWrappedStorage(store), nil
+}
+
+func (m *Manager) WrapFileInfo(fileinfo types.FileInfoProvider, name string) types.FileInfoProvider {
+	if !m.enabled {
+		return fileinfo
+	}
+
+	return m.newWrappedFileInfo(fileinfo, name)
 }
