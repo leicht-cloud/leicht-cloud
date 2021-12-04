@@ -17,11 +17,6 @@ type FileInfo struct {
 	Directory bool      `json:"directory"`
 }
 
-type DirectoryInfo struct {
-	Path  string     `json:"path"`
-	Files []FileInfo `json:"files"`
-}
-
 type File interface {
 	io.ReadCloser
 	io.WriteCloser

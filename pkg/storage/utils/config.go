@@ -17,7 +17,11 @@ type Config struct {
 }
 
 func (c *Config) CreateProvider(pManager *plugin.Manager) (storage.StorageProvider, error) {
-	return fromConfig(c, pManager)
+	out, err := fromConfig(c, pManager)
+	if err != nil {
+		return nil, err
+	}
+	return &ValidateWrapper{Next: out}, nil
 }
 
 func fromConfig(cfg *Config, pManager *plugin.Manager) (storage.StorageProvider, error) {
