@@ -1,5 +1,5 @@
 pkg/http/assets/css/
-pkg/http/assets/js/
+pkg/http/assets/js/lib/
 
 # binaries
 /go-cloud

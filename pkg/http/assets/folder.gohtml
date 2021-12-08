@@ -3,10 +3,10 @@
 <head>
   <link href="/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
   <link href="/css/dataTables.bootstrap5.min.css" rel="stylesheet" crossorigin="anonymous">
-  <script src="/js/jquery.min.js"></script>
-  <script src="/js/jquery.dataTables.min.js"></script>
-  <script src="/js/bootstrap.bundle.min.js"></script>
-  <script src="/js/dataTables.bootstrap5.min.js"></script>
+  <script src="/js/lib/jquery.min.js"></script>
+  <script src="/js/lib/jquery.dataTables.min.js"></script>
+  <script src="/js/lib/bootstrap.bundle.min.js"></script>
+  <script src="/js/lib/dataTables.bootstrap5.min.js"></script>
 
   {{ navbar .Navbar }}
 
@@ -123,7 +123,7 @@
     <form enctype="multipart/form-data" action="/api/upload" method="POST">
       <div class="file-upload-wrapper input-group">
         <input type="file" id="input-file-now-custom-2" name="file" class="file-upload form-control-sm" />
-        <button class="btn btn-primary" type="submit">Upload</button>
+        <button class="btn btn-primary" type="submit" id="uploadButton">Upload</button>
       </div>
     </form>
 
