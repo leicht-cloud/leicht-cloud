@@ -30,3 +30,7 @@ XTERM_JS_URL="https://cdn.jsdelivr.net/npm/xterm@latest/lib/xterm.min.js"
 
 wget -O assets/css/xterm.css $XTERM_CSS_URL
 wget -O assets/js/lib/xterm.min.js $XTERM_JS_URL
+
+TUS_JS_URL="https://cdn.jsdelivr.net/npm/tus-js-client@latest/dist/tus.min.js"
+
+wget -O assets/js/lib/tus.min.js $TUS_JS_URL
