@@ -16,13 +16,15 @@
 
 <body class="text-center">
   <div class="container">
-    <div class="file-upload-wrapper input-group">
-      <input type="file" id="input-file-now-custom-2" name="file" class="file-upload form-control-sm" />
-      <button class="btn btn-primary" id="uploadButton">Upload</button>
-    </div>
-    <div class="progress" style="visibility:hidden">
-      <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%;"></div>
-    </div>
+    <form enctype="multipart/form-data" action="/api/upload" method="POST">
+      <div class="file-upload-wrapper input-group">
+        <input type="file" id="input-file-now-custom-2" name="file" class="file-upload form-control-sm" />
+        <button class="btn btn-primary" id="uploadButton">Upload</button>
+      </div>
+      <div class="progress" style="visibility:hidden">
+        <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%;"></div>
+      </div>
+    </form>
 
     <div id="liveAlertPlaceholder"></div>
 

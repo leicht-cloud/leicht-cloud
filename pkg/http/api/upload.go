@@ -60,7 +60,7 @@ func (h *uploadHandler) Serve(user *models.User, w http.ResponseWriter, r *http.
 		h.mutex.RUnlock()
 
 		if !ok {
-			logrus.Errorf("Couldn't find state with id: %s", id)
+			logrus.Errorf("Couldn't find state with id: %d", id)
 			http.Error(w, "No previous upload found with this id", http.StatusNotFound)
 			return
 		}

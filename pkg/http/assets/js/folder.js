@@ -111,11 +111,8 @@ $(document).ready(function () {
     var progressBar = progress.querySelector('.progress-bar')
 
     if (!tus.isSupported) {
-        alertBox.classList.remove('hidden')
-    }
-
-    if (!toggleBtn) {
-        throw new Error('Toggle button not found on this page. Aborting upload-demo. ')
+        // if tus isn't supported we just bail out and it should default to the regular form upload option
+        return
     }
 
     toggleBtn.addEventListener('click', (e) => {
@@ -150,7 +147,6 @@ $(document).ready(function () {
         }
 
         progress.style.visibility = 'visible'
-        progressBar.classList.remove("bg-success")
         progressBar.classList.remove("bg-warning")
 
         toggleBtn.textContent = 'pause upload'
@@ -173,7 +169,7 @@ $(document).ready(function () {
                         return
                     }
                 } else {
-                    window.alert(`Failed because: ${error}`)
+                    alert(`Failed because: ${error}`, "danger")
                 }
 
                 reset()
@@ -184,18 +180,15 @@ $(document).ready(function () {
                 console.log(bytesUploaded, bytesTotal, `${percentage}%`)
             },
             onSuccess() {
-                progressBar.classList.add("bg-success")
+                progress.style.visibility = 'hidden'
+                alert("Successfully uploaded " + file.name, "success")
                 reset()
             },
         }
 
         upload = new tus.Upload(file, options)
-        upload.findPreviousUploads().then((previousUploads) => {
-            askToResumeUpload(previousUploads, upload)
-
-            upload.start()
-            uploadIsRunning = true
-        })
+        upload.start()
+        uploadIsRunning = true
     }
 
     function reset() {
@@ -203,22 +196,5 @@ $(document).ready(function () {
         toggleBtn.textContent = 'start upload'
         upload = null
         uploadIsRunning = false
-    }
-
-    function askToResumeUpload(previousUploads, upload) {
-        if (previousUploads.length === 0) return
-
-        let text = 'You tried to upload this file previously at these times:\n\n'
-        previousUploads.forEach((previousUpload, index) => {
-            text += `[${index}] ${previousUpload.creationTime}\n`
-        })
-        text += '\nEnter the corresponding number to resume an upload or press Cancel to start a new upload'
-
-        const answer = prompt(text)
-        const index = parseInt(answer, 10)
-
-        if (!isNaN(index) && previousUploads[index]) {
-            upload.resumeFromPreviousUpload(previousUploads[index])
-        }
     }
 });
