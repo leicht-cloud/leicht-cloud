@@ -45,7 +45,7 @@ func (h *uploadHandler) Serve(user *models.User, w http.ResponseWriter, r *http.
 		w.Header().Add("Tus-Extension", "creation")
 		w.Header().Add("Tus-Resumable", "1.0.0")
 		w.Header().Add("Tus-Version", "1.0.0")
-		w.WriteHeader(200)
+		w.WriteHeader(http.StatusOK)
 		return
 	} else if r.URL.Query().Has("resume") {
 		// if we have the resume parameter it is an attempt to resume a previously started upload
@@ -130,21 +130,18 @@ func (h *uploadHandler) Serve(user *models.User, w http.ResponseWriter, r *http.
 				break
 			}
 			if err != nil {
-				logrus.Error(err)
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
 
 			filename := p.FileName()
 			if filename == "" {
-				logrus.Error(err)
 				http.Error(w, "Empty filename?", http.StatusBadRequest)
 				return
 			}
 
 			f, err := h.Storage.File(r.Context(), user, path.Join("/", filename))
 			if err != nil {
-				logrus.Error(err)
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -152,12 +149,12 @@ func (h *uploadHandler) Serve(user *models.User, w http.ResponseWriter, r *http.
 
 			_, err = io.Copy(f, p)
 			if err != nil {
-				logrus.Error(err)
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
 		}
 
+		w.WriteHeader(http.StatusCreated)
 		return
 	}
 
