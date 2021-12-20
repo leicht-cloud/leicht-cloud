@@ -27,7 +27,8 @@ func TestDownload(t *testing.T) {
 
 	data := &bytes.Buffer{}
 	const length = 49569
-	io.CopyN(data, rand.New(rand.NewSource(time.Now().UnixNano())), length)
+	_, err := io.CopyN(data, rand.New(rand.NewSource(time.Now().UnixNano())), length)
+	assert.NoError(t, err, err)
 	raw := data.Bytes()
 
 	memfs.Data["/test.data"] = raw

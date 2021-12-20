@@ -25,7 +25,8 @@ func TestMultipart(t *testing.T) {
 
 	data := &bytes.Buffer{}
 	const length = 49569
-	io.CopyN(data, rand.New(rand.NewSource(time.Now().UnixNano())), length)
+	_, err := io.CopyN(data, rand.New(rand.NewSource(time.Now().UnixNano())), length)
+	assert.NoError(t, err, err)
 	raw := data.Bytes()
 
 	body := &bytes.Buffer{}
@@ -35,7 +36,8 @@ func TestMultipart(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	io.Copy(part, data)
+	_, err = io.Copy(part, data)
+	assert.NoError(t, err, err)
 
 	writer.Close()
 
@@ -69,7 +71,8 @@ func TestMultipartInvalidFilename(t *testing.T) {
 
 	data := &bytes.Buffer{}
 	const length = 49569
-	io.CopyN(data, rand.New(rand.NewSource(0)), length)
+	_, err := io.CopyN(data, rand.New(rand.NewSource(0)), length)
+	assert.NoError(t, err, err)
 
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
@@ -78,7 +81,8 @@ func TestMultipartInvalidFilename(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	io.Copy(part, data)
+	_, err = io.Copy(part, data)
+	assert.NoError(t, err, err)
 
 	writer.Close()
 

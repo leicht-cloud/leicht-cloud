@@ -63,7 +63,8 @@ func TestTusUploadFullCycle(t *testing.T) {
 
 	data := &bytes.Buffer{}
 	const length = 49569
-	io.CopyN(data, rand.New(rand.NewSource(time.Now().UnixNano())), length)
+	_, err := io.CopyN(data, rand.New(rand.NewSource(time.Now().UnixNano())), length)
+	assert.NoError(t, err, err)
 	raw := data.Bytes()
 
 	createReq, err := http.NewRequest(http.MethodPost, "/api/upload", nil)
