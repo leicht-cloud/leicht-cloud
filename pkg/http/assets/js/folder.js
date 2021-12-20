@@ -109,6 +109,7 @@ $(document).ready(function () {
     var input = document.querySelector('input[type=file]')
     var progress = document.querySelector('.progress')
     var progressBar = progress.querySelector('.progress-bar')
+    var filePos = 0
 
     if (!tus.isSupported) {
         // if tus isn't supported we just bail out and it should default to the regular form upload option
@@ -138,11 +139,13 @@ $(document).ready(function () {
     input.addEventListener('change', startUpload)
 
     function startUpload() {
-        var file = input.files[0]
+        var file = input.files[filePos]
         // Only continue if a file has actually been selected.
         // IE will trigger a change event even if we reset the input element
         // using reset() and we do not want to blow up later.
         if (!file) {
+            filePos = 0
+            input.value = ''
             return
         }
 
@@ -183,6 +186,8 @@ $(document).ready(function () {
                 progress.style.visibility = 'hidden'
                 alert("Successfully uploaded " + file.name, "success")
                 reset()
+                filePos++
+                startUpload()
             },
         }
 
@@ -192,7 +197,6 @@ $(document).ready(function () {
     }
 
     function reset() {
-        input.value = ''
         toggleBtn.textContent = 'start upload'
         upload = null
         uploadIsRunning = false
