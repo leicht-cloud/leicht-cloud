@@ -63,6 +63,7 @@ func WithLogging(h http.Handler) http.Handler {
 		user := auth.GetUserFromRequest(req)
 
 		entry := logrus.WithFields(logrus.Fields{
+			"src":      req.RemoteAddr,
 			"uri":      req.RequestURI,
 			"method":   req.Method,
 			"status":   responseData.status,
