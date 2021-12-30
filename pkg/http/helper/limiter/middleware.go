@@ -37,7 +37,7 @@ func (m *middleWare) Serve(user *models.User, w http.ResponseWriter, r *http.Req
 	logrus.Debugf("Applying the following rate limits: %#v", limit)
 
 	// otherwise we override the body with the freshly fetched settings
-	r.Body = NewReader(r.Body, limit.RateLimit, limit.Burst)
+	r.Body = NewReader(r.Body, float64(limit.RateLimit), limit.Burst)
 
 	// and we pass the request with the adjusted body along to the wrapped handler
 	m.handler.Serve(user, w, r)
