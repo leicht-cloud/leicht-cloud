@@ -7,17 +7,25 @@ import (
 
 	"github.com/schoentoon/go-cloud/pkg/auth"
 	_ "github.com/schoentoon/go-cloud/pkg/fileinfo/builtin"
+	"github.com/schoentoon/go-cloud/pkg/http/helper/limiter"
 	"github.com/schoentoon/go-cloud/pkg/models"
 	"github.com/schoentoon/go-cloud/pkg/storage"
 	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 type downloadHandler struct {
 	Storage storage.StorageProvider
 }
 
-func newDownloadHandler(store storage.StorageProvider) http.Handler {
-	return auth.AuthHandler(&downloadHandler{Storage: store})
+func newDownloadHandler(db *gorm.DB, store storage.StorageProvider) http.Handler {
+	return auth.AuthHandler(
+		limiter.DownloadMiddleware(db,
+			&downloadHandler{
+				Storage: store,
+			},
+		),
+	)
 }
 
 func (h *downloadHandler) Serve(user *models.User, w http.ResponseWriter, r *http.Request) {

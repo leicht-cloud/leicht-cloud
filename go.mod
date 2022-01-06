@@ -46,4 +46,7 @@ require (
 	go.uber.org/multierr v1.7.0
 )
 
-require go.uber.org/atomic v1.7.0 // indirect
+require (
+	github.com/juju/ratelimit v1.0.1 // indirect
+	go.uber.org/atomic v1.7.0 // indirect
+)

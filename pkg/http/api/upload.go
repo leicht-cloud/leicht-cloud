@@ -13,9 +13,11 @@ import (
 	"sync"
 
 	"github.com/schoentoon/go-cloud/pkg/auth"
+	"github.com/schoentoon/go-cloud/pkg/http/helper/limiter"
 	"github.com/schoentoon/go-cloud/pkg/models"
 	"github.com/schoentoon/go-cloud/pkg/storage"
 	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 type uploadHandler struct {
@@ -33,11 +35,14 @@ type uploadState struct {
 	File     storage.File
 }
 
-func newUploadHandler(store storage.StorageProvider) http.Handler {
-	return auth.AuthHandler(&uploadHandler{
-		Storage: store,
-		uploads: make(map[int64]*uploadState),
-	})
+func newUploadHandler(db *gorm.DB, store storage.StorageProvider) http.Handler {
+	return auth.AuthHandler(
+		limiter.UploadMiddleware(db,
+			&uploadHandler{
+				Storage: store,
+				uploads: make(map[int64]*uploadState),
+			}),
+	)
 }
 
 func (h *uploadHandler) Serve(user *models.User, w http.ResponseWriter, r *http.Request) {

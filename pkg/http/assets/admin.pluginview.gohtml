@@ -28,6 +28,20 @@
         {{ adminnavbar .AdminNavbar }}
 
         <div id="content">
+            <h1 class="h2">{{ .Name }}</h1>
+            <div id="terminal"></div>
+            <script>
+                var term = new Terminal();
+                term.open(document.getElementById('terminal'));
+                term.setOption('convertEol', true);
+                term.setOption('disableStdin', true);
+
+                // TODO: Do wss here if the page is served over https
+                var socket = new WebSocket("ws://" + document.location.host + "/admin/plugin/stdout?name={{ .Name }}");
+                socket.onmessage = function (event) {
+                    term.write(event.data);
+                };
+            </script>
         </div>
     </div>
 </body>

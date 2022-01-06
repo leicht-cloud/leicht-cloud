@@ -4,10 +4,35 @@ import (
 	"net/http"
 
 	"github.com/gorilla/websocket"
-	"github.com/schoentoon/go-cloud/pkg/auth"
+	"github.com/schoentoon/go-cloud/pkg/http/template"
+	"github.com/schoentoon/go-cloud/pkg/models"
 	"github.com/schoentoon/go-cloud/pkg/plugin"
 	"github.com/sirupsen/logrus"
 )
+
+type pluginHandler struct {
+	AdminNavbar   template.AdminNavbarData
+	StaticHandler http.Handler
+}
+
+func (h *pluginHandler) Serve(user *models.User, w http.ResponseWriter, r *http.Request) {
+	// internal rewrite to admin page, so we render that
+	r.URL.Path = "/admin.pluginview.gohtml"
+
+	ctx := template.AttachTemplateData(r.Context(), struct {
+		Name        string
+		AdminNavbar template.AdminNavbarData
+		Navbar      template.NavbarData
+	}{
+		Name:        r.URL.Query().Get("name"),
+		AdminNavbar: h.AdminNavbar,
+		Navbar: template.NavbarData{
+			Admin: user.Admin,
+		},
+	})
+
+	h.StaticHandler.ServeHTTP(w, r.WithContext(ctx))
+}
 
 type pluginStdoutHandler struct {
 	PluginManager *plugin.Manager
@@ -18,14 +43,7 @@ var websocketUpgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
-func (h *pluginStdoutHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	user := auth.GetUserFromRequest(r)
-	if user == nil || !user.Admin {
-		// we redirect you to / as you don't have permission to view the admin panel
-		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
-		return
-	}
-
+func (h *pluginStdoutHandler) Serve(user *models.User, w http.ResponseWriter, r *http.Request) {
 	name := r.URL.Query().Get("name")
 
 	stdout, err := h.PluginManager.Stdout(name)
