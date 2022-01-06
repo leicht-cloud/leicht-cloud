@@ -15,12 +15,15 @@ func TestReader(t *testing.T) {
 	// meaning it should take 2 seconds, so we really just test whether
 	// it will take more than 1 second or not
 	buf := bytes.NewBufferString("123456789012345")
+	bufLen := int64(buf.Len())
 	reader := NewReader(buf, 5, 5)
 	defer reader.Close()
 
 	start := time.Now()
 
-	io.Copy(io.Discard, reader)
+	n, err := io.Copy(io.Discard, reader)
+	assert.NoError(t, err)
+	assert.Equal(t, bufLen, n)
 
 	end := time.Now()
 	duration := end.Sub(start)
@@ -43,7 +46,9 @@ func TestReaderDevZero(t *testing.T) {
 
 	start := time.Now()
 
-	io.Copy(io.Discard, ratelimited)
+	n, err := io.Copy(io.Discard, ratelimited)
+	assert.NoError(t, err)
+	assert.Greater(t, n, int64(0))
 
 	end := time.Now()
 	duration := end.Sub(start)

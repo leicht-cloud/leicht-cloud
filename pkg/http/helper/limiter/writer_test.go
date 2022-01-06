@@ -14,11 +14,14 @@ func TestResponseWriter(t *testing.T) {
 	// meaning it should take 2 seconds, so we really just test whether
 	// it will take more than 1 second or not
 	buf := bytes.NewBufferString("123456789012345")
+	buflen := int64(buf.Len())
 	writer := NewResponseWriter(io.Discard, 5, 5)
 
 	start := time.Now()
 
-	io.Copy(writer, buf)
+	n, err := io.Copy(writer, buf)
+	assert.NoError(t, err)
+	assert.Equal(t, buflen, n)
 
 	end := time.Now()
 	duration := end.Sub(start)
