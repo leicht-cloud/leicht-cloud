@@ -42,6 +42,20 @@
           <button type="submit" class="btn btn-primary">Save</button>
         </form>
       </div>
+
+      <div style="border:1px">
+        <h2 class="h3">Download limit</h2>
+        <form name="download_limit" class="input-group mb-3" method="POST">
+          <input type="text" class="form-control" name="download_limit_number" value="{{ .DownloadLimitHuman.Number }}" />
+          <select class="form-select" name="download_limit_metric">
+            <option value="unlimited" {{ if .DownloadLimit.Unlimited }}selected{{ end }}>Unlimited</option>
+            <option value="kbps" {{ if eq .DownloadLimitHuman.Metric "kbps" }}selected{{ end }}>KB/s</option>
+            <option value="mbps" {{ if eq .DownloadLimitHuman.Metric "mbps" }}selected{{ end }}>MB/s</option>
+          </select>
+          <button type="submit" class="btn btn-primary">Save</button>
+        </form>
+      </div>
+
     </div>
   </div>
 </body>
