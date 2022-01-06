@@ -1,0 +1,49 @@
+<html>
+
+<head>
+  <link href="/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+  <link href="/css/xterm.css" rel="stylesheet" crossorigin="anonymous">
+  <script src="/js/lib/bootstrap.bundle.min.js"></script>
+  <script src="/js/lib/jquery.min.js"></script>
+  <script src="/js/lib/xterm.min.js"></script>
+
+  {{ navbar .Navbar }}
+
+  <style>
+    .wrapper {
+      display: flex;
+      align-items: stretch;
+    }
+
+    #sidebar {
+      min-width: 250px;
+      max-width: 250px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container wrapper">
+
+    {{ adminnavbar .AdminNavbar }}
+
+    <div id="content">
+      <h1 class="h2">{{ .User.Email }}</h1>
+
+      <div style="border:1px">
+        <h2 class="h3">Upload limit</h2>
+        <form name="upload_limit" class="input-group mb-3" method="POST">
+          <input type="text" class="form-control" name="upload_limit_number" value="{{ .UploadLimitHuman.Number }}" />
+          <select class="form-select" name="upload_limit_metric">
+            <option value="unlimited" {{ if .UploadLimit.Unlimited }}selected{{ end }}>Unlimited</option>
+            <option value="kbps" {{ if eq .UploadLimitHuman.Metric "kbps" }}selected{{ end }}>KB/s</option>
+            <option value="mbps" {{ if eq .UploadLimitHuman.Metric "mbps" }}selected{{ end }}>MB/s</option>
+          </select>
+          <button type="submit" class="btn btn-primary">Save</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>

@@ -34,7 +34,7 @@ func InitHttpServer(
 	mux.Handle("/login", &loginHandler{DB: db, Auth: authProvider, StaticHandler: templateHandler})
 	mux.Handle("/signup", &signupHandler{Assets: assets, DB: db, Storage: storage})
 	api.Init(mux, db, storage, fileinfo)
-	admin.Init(mux, templateHandler, pluginManager, db)
+	admin.Init(mux, authProvider, templateHandler, pluginManager, db)
 
 	out := &http.Server{
 		Addr: ":8080",
