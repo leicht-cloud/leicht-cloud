@@ -9,20 +9,20 @@ import (
 	"gorm.io/gorm"
 )
 
-type middleWare struct {
+type uploadMiddleWare struct {
 	handler auth.AuthHandlerInterface
 
 	db *gorm.DB
 }
 
-func Middleware(db *gorm.DB, handler auth.AuthHandlerInterface) auth.AuthHandlerInterface {
-	return &middleWare{
+func UploadMiddleware(db *gorm.DB, handler auth.AuthHandlerInterface) auth.AuthHandlerInterface {
+	return &uploadMiddleWare{
 		handler: handler,
 		db:      db,
 	}
 }
 
-func (m *middleWare) Serve(user *models.User, w http.ResponseWriter, r *http.Request) {
+func (m *uploadMiddleWare) Serve(user *models.User, w http.ResponseWriter, r *http.Request) {
 	limit := &models.UploadLimit{}
 	tx := m.db.First(limit, "user_id = ?", user.ID)
 

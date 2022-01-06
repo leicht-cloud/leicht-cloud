@@ -37,7 +37,7 @@ type uploadState struct {
 
 func newUploadHandler(db *gorm.DB, store storage.StorageProvider) http.Handler {
 	return auth.AuthHandler(
-		limiter.Middleware(db,
+		limiter.UploadMiddleware(db,
 			&uploadHandler{
 				Storage: store,
 				uploads: make(map[int64]*uploadState),
