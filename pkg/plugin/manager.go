@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	_ "github.com/schoentoon/go-cloud/pkg/plugin/namespace"
+	_ "github.com/leicht-cloud/leicht-cloud/pkg/plugin/namespace"
 
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"

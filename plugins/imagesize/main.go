@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/schoentoon/go-cloud/pkg/fileinfo/plugin"
+	"github.com/leicht-cloud/leicht-cloud/pkg/fileinfo/plugin"
 	"github.com/sirupsen/logrus"
 )
 

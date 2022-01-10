@@ -1,6 +1,6 @@
 package fileinfo
 
-import "github.com/schoentoon/go-cloud/pkg/plugin"
+import "github.com/leicht-cloud/leicht-cloud/pkg/plugin"
 
 type Config struct {
 	MimeProvider string   `yaml:"mime_provider"`

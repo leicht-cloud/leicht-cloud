@@ -8,7 +8,7 @@ import (
 	context "context"
 	"io"
 
-	"github.com/schoentoon/go-cloud/pkg/fileinfo/types"
+	"github.com/leicht-cloud/leicht-cloud/pkg/fileinfo/types"
 )
 
 type BridgeFileinfoProviderServer struct {

@@ -4,9 +4,9 @@ import (
 	"net/http"
 
 	"github.com/gorilla/websocket"
-	"github.com/schoentoon/go-cloud/pkg/http/template"
-	"github.com/schoentoon/go-cloud/pkg/models"
-	"github.com/schoentoon/go-cloud/pkg/plugin"
+	"github.com/leicht-cloud/leicht-cloud/pkg/http/template"
+	"github.com/leicht-cloud/leicht-cloud/pkg/models"
+	"github.com/leicht-cloud/leicht-cloud/pkg/plugin"
 	"github.com/sirupsen/logrus"
 )
 

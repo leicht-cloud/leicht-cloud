@@ -5,7 +5,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/schoentoon/go-cloud/pkg/models"
+	"github.com/leicht-cloud/leicht-cloud/pkg/models"
 )
 
 type FileInfo struct {

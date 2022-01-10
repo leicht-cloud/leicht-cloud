@@ -3,10 +3,10 @@ package main
 import (
 	"os"
 
-	"github.com/schoentoon/go-cloud/pkg/auth"
-	"github.com/schoentoon/go-cloud/pkg/fileinfo"
-	"github.com/schoentoon/go-cloud/pkg/plugin"
-	storage "github.com/schoentoon/go-cloud/pkg/storage/utils"
+	"github.com/leicht-cloud/leicht-cloud/pkg/auth"
+	"github.com/leicht-cloud/leicht-cloud/pkg/fileinfo"
+	"github.com/leicht-cloud/leicht-cloud/pkg/plugin"
+	storage "github.com/leicht-cloud/leicht-cloud/pkg/storage/utils"
 	"gopkg.in/yaml.v2"
 )
 

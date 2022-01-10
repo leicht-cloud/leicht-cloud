@@ -2,7 +2,7 @@ pkg/http/assets/css/
 pkg/http/assets/js/lib/
 
 # binaries
-/go-cloud
+/leicht-cloud
 /build-plugin
 
 # files to help with testing

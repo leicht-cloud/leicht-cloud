@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/schoentoon/go-cloud/pkg/models"
+	"github.com/leicht-cloud/leicht-cloud/pkg/models"
 )
 
 // AuthHandler you'll want to chain this in if you want to make auth mandatory for the endpoint

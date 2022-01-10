@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package gocloud.storage.plugin;
+package leichtcloud.storage.plugin;
 
-option go_package = "github.com/schoentoon/go-cloud/pkg/storage/plugin";
+option go_package = "github.com/leicht-cloud/leicht-cloud/pkg/storage/plugin";
 
 // Interface exported by the server.
 service StorageProvider {

@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/schoentoon/go-cloud/pkg/http/template"
-	"github.com/schoentoon/go-cloud/pkg/models"
+	"github.com/leicht-cloud/leicht-cloud/pkg/http/template"
+	"github.com/leicht-cloud/leicht-cloud/pkg/models"
 	"github.com/sirupsen/logrus"
 	"go.uber.org/multierr"
 	"gorm.io/gorm"

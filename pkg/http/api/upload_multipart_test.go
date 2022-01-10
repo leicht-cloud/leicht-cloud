@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/schoentoon/go-cloud/pkg/models"
+	"github.com/leicht-cloud/leicht-cloud/pkg/models"
 	"github.com/stretchr/testify/assert"
 )
 

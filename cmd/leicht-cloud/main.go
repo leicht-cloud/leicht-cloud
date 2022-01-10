@@ -6,8 +6,8 @@ import (
 	"os"
 	"os/signal"
 
-	gchttp "github.com/schoentoon/go-cloud/pkg/http"
-	"github.com/schoentoon/go-cloud/pkg/models"
+	gchttp "github.com/leicht-cloud/leicht-cloud/pkg/http"
+	"github.com/leicht-cloud/leicht-cloud/pkg/models"
 
 	"github.com/sirupsen/logrus"
 	"gorm.io/driver/sqlite"

@@ -3,8 +3,8 @@ package admin
 import (
 	"net/http"
 
-	"github.com/schoentoon/go-cloud/pkg/auth"
-	"github.com/schoentoon/go-cloud/pkg/models"
+	"github.com/leicht-cloud/leicht-cloud/pkg/auth"
+	"github.com/leicht-cloud/leicht-cloud/pkg/models"
 )
 
 type middleWare struct {

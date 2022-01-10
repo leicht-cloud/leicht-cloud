@@ -11,7 +11,7 @@ import (
 
 	"golang.org/x/crypto/sha3"
 
-	fileinfo "github.com/schoentoon/go-cloud/pkg/fileinfo/types"
+	fileinfo "github.com/leicht-cloud/leicht-cloud/pkg/fileinfo/types"
 )
 
 func init() {

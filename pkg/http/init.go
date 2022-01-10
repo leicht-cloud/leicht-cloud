@@ -3,13 +3,13 @@ package http
 import (
 	"net/http"
 
-	"github.com/schoentoon/go-cloud/pkg/auth"
-	"github.com/schoentoon/go-cloud/pkg/fileinfo"
-	"github.com/schoentoon/go-cloud/pkg/http/admin"
-	"github.com/schoentoon/go-cloud/pkg/http/api"
-	"github.com/schoentoon/go-cloud/pkg/http/template"
-	"github.com/schoentoon/go-cloud/pkg/plugin"
-	"github.com/schoentoon/go-cloud/pkg/storage"
+	"github.com/leicht-cloud/leicht-cloud/pkg/auth"
+	"github.com/leicht-cloud/leicht-cloud/pkg/fileinfo"
+	"github.com/leicht-cloud/leicht-cloud/pkg/http/admin"
+	"github.com/leicht-cloud/leicht-cloud/pkg/http/api"
+	"github.com/leicht-cloud/leicht-cloud/pkg/http/template"
+	"github.com/leicht-cloud/leicht-cloud/pkg/plugin"
+	"github.com/leicht-cloud/leicht-cloud/pkg/storage"
 	"gorm.io/gorm"
 )
 

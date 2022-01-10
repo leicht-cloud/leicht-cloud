@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"github.com/schoentoon/go-cloud/pkg/fileinfo"
+	"github.com/leicht-cloud/leicht-cloud/pkg/fileinfo"
 )
 
 func TestFileInfoImageSize(t *testing.T) {

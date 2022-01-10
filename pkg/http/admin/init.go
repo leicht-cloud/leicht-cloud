@@ -3,9 +3,9 @@ package admin
 import (
 	"net/http"
 
-	"github.com/schoentoon/go-cloud/pkg/auth"
-	"github.com/schoentoon/go-cloud/pkg/http/template"
-	"github.com/schoentoon/go-cloud/pkg/plugin"
+	"github.com/leicht-cloud/leicht-cloud/pkg/auth"
+	"github.com/leicht-cloud/leicht-cloud/pkg/http/template"
+	"github.com/leicht-cloud/leicht-cloud/pkg/plugin"
 	"gorm.io/gorm"
 )
 

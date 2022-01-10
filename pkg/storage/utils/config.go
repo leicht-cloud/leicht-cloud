@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/schoentoon/go-cloud/pkg/plugin"
-	"github.com/schoentoon/go-cloud/pkg/storage"
-	"github.com/schoentoon/go-cloud/pkg/storage/builtin/local"
-	storagePlugin "github.com/schoentoon/go-cloud/pkg/storage/plugin"
+	"github.com/leicht-cloud/leicht-cloud/pkg/plugin"
+	"github.com/leicht-cloud/leicht-cloud/pkg/storage"
+	"github.com/leicht-cloud/leicht-cloud/pkg/storage/builtin/local"
+	storagePlugin "github.com/leicht-cloud/leicht-cloud/pkg/storage/plugin"
 )
 
 type Config struct {

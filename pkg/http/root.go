@@ -3,8 +3,8 @@ package http
 import (
 	"net/http"
 
-	"github.com/schoentoon/go-cloud/pkg/auth"
-	"github.com/schoentoon/go-cloud/pkg/http/template"
+	"github.com/leicht-cloud/leicht-cloud/pkg/auth"
+	"github.com/leicht-cloud/leicht-cloud/pkg/http/template"
 	"gorm.io/gorm"
 )
 

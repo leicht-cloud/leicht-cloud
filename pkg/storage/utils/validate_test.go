@@ -3,8 +3,8 @@ package utils
 import (
 	"testing"
 
-	"github.com/schoentoon/go-cloud/pkg/storage"
-	"github.com/schoentoon/go-cloud/pkg/storage/builtin/memory"
+	"github.com/leicht-cloud/leicht-cloud/pkg/storage"
+	"github.com/leicht-cloud/leicht-cloud/pkg/storage/builtin/memory"
 	"github.com/stretchr/testify/assert"
 )
 

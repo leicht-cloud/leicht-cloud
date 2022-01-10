@@ -8,8 +8,8 @@ import (
 	"hash"
 	"testing"
 
-	"github.com/schoentoon/go-cloud/pkg/fileinfo"
-	"github.com/schoentoon/go-cloud/pkg/fileinfo/types"
+	"github.com/leicht-cloud/leicht-cloud/pkg/fileinfo"
+	"github.com/leicht-cloud/leicht-cloud/pkg/fileinfo/types"
 	"golang.org/x/crypto/sha3"
 )
 

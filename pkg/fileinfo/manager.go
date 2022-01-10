@@ -7,10 +7,10 @@ import (
 	"io/ioutil"
 	"strings"
 
-	fileinfoPlugin "github.com/schoentoon/go-cloud/pkg/fileinfo/plugin"
-	"github.com/schoentoon/go-cloud/pkg/fileinfo/types"
-	"github.com/schoentoon/go-cloud/pkg/plugin"
-	"github.com/schoentoon/go-cloud/pkg/storage"
+	fileinfoPlugin "github.com/leicht-cloud/leicht-cloud/pkg/fileinfo/plugin"
+	"github.com/leicht-cloud/leicht-cloud/pkg/fileinfo/types"
+	"github.com/leicht-cloud/leicht-cloud/pkg/plugin"
+	"github.com/leicht-cloud/leicht-cloud/pkg/storage"
 	"github.com/sirupsen/logrus"
 )
 

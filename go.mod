@@ -1,4 +1,4 @@
-module github.com/schoentoon/go-cloud
+module github.com/leicht-cloud/leicht-cloud
 
 go 1.17
 

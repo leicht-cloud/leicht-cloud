@@ -7,9 +7,9 @@ import (
 	"os/exec"
 	"testing"
 
-	"github.com/schoentoon/go-cloud/pkg/plugin"
-	"github.com/schoentoon/go-cloud/pkg/storage"
-	storagePlugin "github.com/schoentoon/go-cloud/pkg/storage/plugin"
+	"github.com/leicht-cloud/leicht-cloud/pkg/plugin"
+	"github.com/leicht-cloud/leicht-cloud/pkg/storage"
+	storagePlugin "github.com/leicht-cloud/leicht-cloud/pkg/storage/plugin"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v2"
 )

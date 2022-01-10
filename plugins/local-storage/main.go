@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/schoentoon/go-cloud/pkg/storage/builtin/local"
-	"github.com/schoentoon/go-cloud/pkg/storage/plugin"
+	"github.com/leicht-cloud/leicht-cloud/pkg/storage/builtin/local"
+	"github.com/leicht-cloud/leicht-cloud/pkg/storage/plugin"
 )
 
 func main() {

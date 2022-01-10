@@ -11,8 +11,8 @@ import (
 
 	"google.golang.org/grpc"
 
-	"github.com/schoentoon/go-cloud/pkg/models"
-	storagePlugin "github.com/schoentoon/go-cloud/pkg/storage/plugin"
+	"github.com/leicht-cloud/leicht-cloud/pkg/models"
+	storagePlugin "github.com/leicht-cloud/leicht-cloud/pkg/storage/plugin"
 	"github.com/sirupsen/logrus"
 )
 

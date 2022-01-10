@@ -3,8 +3,8 @@ package api
 import (
 	"net/http"
 
-	"github.com/schoentoon/go-cloud/pkg/fileinfo"
-	"github.com/schoentoon/go-cloud/pkg/storage"
+	"github.com/leicht-cloud/leicht-cloud/pkg/fileinfo"
+	"github.com/leicht-cloud/leicht-cloud/pkg/storage"
 	"gorm.io/gorm"
 )
 
