@@ -10,6 +10,3 @@ pkg/http/assets/js/lib/
 tmp/
 *.yml
 !config.yml
-
-# generated
-*.pb.go
