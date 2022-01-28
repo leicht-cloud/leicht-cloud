@@ -34,7 +34,12 @@ func fromConfig(cfg *Config, pManager *plugin.Manager) (storage.StorageProvider,
 	} else if strings.HasPrefix(cfg.Provider, "plugin:") {
 		name := strings.TrimPrefix(cfg.Provider, "plugin:")
 
-		conn, err := pManager.Start(name)
+		plugin, err := pManager.Start(name)
+		if err != nil {
+			return nil, err
+		}
+
+		conn, err := plugin.GrpcConn()
 		if err != nil {
 			return nil, err
 		}

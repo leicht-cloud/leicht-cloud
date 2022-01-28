@@ -37,7 +37,12 @@ func NewManager(pManager *plugin.Manager, mimetypeProvider string, provider ...s
 	for _, name := range provider {
 		if strings.HasPrefix(name, "plugin:") {
 			name = strings.TrimPrefix(name, "plugin:")
-			conn, err := pManager.Start(name)
+			plugin, err := pManager.Start(name)
+			if err != nil {
+				return nil, err
+			}
+
+			conn, err := plugin.GrpcConn()
 			if err != nil {
 				return nil, err
 			}
