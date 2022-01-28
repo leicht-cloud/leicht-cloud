@@ -39,6 +39,11 @@ func (c *Config) CreateManager() (*Manager, error) {
 		return nil, err
 	}
 
+	err = runner.configure(c.Options)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Manager{
 		cfg:           c,
 		runnerFactory: runner,

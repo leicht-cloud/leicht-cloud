@@ -11,7 +11,6 @@ import (
 	_ "github.com/leicht-cloud/leicht-cloud/pkg/plugin/internal/namespace"
 
 	"github.com/docker/docker/pkg/reexec"
-	"github.com/schoentoon/nsnet/pkg/host"
 	"github.com/sirupsen/logrus"
 )
 
@@ -26,7 +25,7 @@ type namespaceFactory struct {
 type namespaceRunner struct {
 	cmd *exec.Cmd
 
-	tun *host.TunDevice
+	network network
 }
 
 func (n *namespaceFactory) configure(opts map[string]interface{}) error {
@@ -42,14 +41,7 @@ func (n *namespaceFactory) configure(opts map[string]interface{}) error {
 		return fmt.Errorf("network_mode specified isn't a valid string: %+v", raw)
 	}
 
-	switch mode {
-	case "userspace":
-		fallthrough
-	case "host":
-		n.NetworkMode = mode
-	default:
-		return fmt.Errorf("Invalid network_mode specified: %+v", mode)
-	}
+	n.NetworkMode = mode
 
 	return nil
 }
@@ -95,31 +87,49 @@ func (n *namespaceFactory) Create(opts *RunOptions) (Runner, error) {
 	if opts.Manifest.Permissions.Network {
 		out.cmd.Env = append(out.cmd.Env, fmt.Sprintf("NETWORK=%s", n.NetworkMode))
 
-		if n.NetworkMode == "userspace" {
-			tun, err := host.New(host.DefaultOptions())
-			if err != nil {
-				return nil, err
-			}
-			tun.AttachToCmd(out.cmd)
-
-			out.tun = tun
-		} else if n.NetworkMode == "host" {
-			// if our network mode is host, we unset the CLONE_NEWNET flag so our containers run
-			// with the actual host network
-			out.cmd.SysProcAttr.Cloneflags = out.cmd.SysProcAttr.Cloneflags &^ syscall.CLONE_NEWNET
-		} else {
-			panic("we shouldn't be able to reach here")
+		netFactory, ok := network_modes[n.NetworkMode]
+		if !ok {
+			return nil, fmt.Errorf("Network mode %s isn't supported", n.NetworkMode)
 		}
+
+		out.network = netFactory()
 	}
 
 	return out, nil
 }
 
 func (n *namespaceRunner) Start() error {
-	return n.cmd.Start()
+	if n.network != nil {
+		err := n.network.PreStart(n)
+		if err != nil {
+			return err
+		}
+	}
+	err := n.cmd.Start()
+	if err != nil {
+		return err
+	}
+
+	if n.network != nil {
+		return n.network.PostStart(n)
+	}
+	return nil
 }
 
 func (n *namespaceRunner) Close() error {
+	if n.network != nil {
+		err := n.network.PreClose(n)
+		if err != nil {
+			logrus.Error(err)
+		}
+		defer func() {
+			err := n.network.PostClose(n)
+			if err != nil {
+				logrus.Error(err)
+			}
+		}()
+	}
+
 	err := n.cmd.Process.Signal(os.Interrupt)
 	if err != nil {
 		err = n.cmd.Process.Kill()
