@@ -8,7 +8,7 @@ import (
 	"syscall"
 	"time"
 
-	_ "github.com/leicht-cloud/leicht-cloud/pkg/plugin/namespace"
+	_ "github.com/leicht-cloud/leicht-cloud/pkg/plugin/internal/namespace"
 
 	"github.com/docker/docker/pkg/reexec"
 	"github.com/schoentoon/nsnet/pkg/host"
