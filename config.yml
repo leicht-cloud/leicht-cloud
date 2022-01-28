@@ -4,9 +4,10 @@ plugin:
   debug: true
   path:
     - ./built-plugins
-  workdir: /tmp/go-cloud/
-  namespaced: true
-  network_mode: "host"
+  workdir: /tmp/leicht-cloud/
+  runtime: "namespace"
+  options:
+    network_mode: "userspace"
 fileinfo:
   mime_provider: "gonative"
   providers:
@@ -23,4 +24,4 @@ fileinfo:
 storage:
   provider: local
   extra:
-    path: /data/go-cloud
+    path: /data/leicht-cloud
