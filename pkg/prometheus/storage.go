@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/leicht-cloud/leicht-cloud/pkg/models"
+	"github.com/leicht-cloud/leicht-cloud/pkg/storage"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/schoentoon/go-cloud/pkg/models"
-	"github.com/schoentoon/go-cloud/pkg/storage"
 )
 
 type wrappedStorage struct {

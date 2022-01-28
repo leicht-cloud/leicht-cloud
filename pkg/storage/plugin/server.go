@@ -8,7 +8,7 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/schoentoon/go-cloud/pkg/storage"
+	"github.com/leicht-cloud/leicht-cloud/pkg/storage"
 	"github.com/sirupsen/logrus"
 	grpc "google.golang.org/grpc"
 )

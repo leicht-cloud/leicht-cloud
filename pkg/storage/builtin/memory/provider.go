@@ -6,8 +6,8 @@ import (
 	"path"
 	"strings"
 
-	"github.com/schoentoon/go-cloud/pkg/models"
-	"github.com/schoentoon/go-cloud/pkg/storage"
+	"github.com/leicht-cloud/leicht-cloud/pkg/models"
+	"github.com/leicht-cloud/leicht-cloud/pkg/storage"
 )
 
 // This provider should NOT be used in production and also has no concept of users

@@ -5,7 +5,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/schoentoon/go-cloud/pkg/models"
+	"github.com/leicht-cloud/leicht-cloud/pkg/models"
 )
 
 type FileInfo struct {
@@ -15,11 +15,6 @@ type FileInfo struct {
 	UpdatedAt time.Time `json:"updated_at"`
 	Size      uint64    `json:"size"`
 	Directory bool      `json:"directory"`
-}
-
-type DirectoryInfo struct {
-	Path  string     `json:"path"`
-	Files []FileInfo `json:"files"`
 }
 
 type File interface {

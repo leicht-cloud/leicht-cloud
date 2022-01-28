@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/schoentoon/go-cloud/pkg/fileinfo/types"
+	"github.com/leicht-cloud/leicht-cloud/pkg/fileinfo/types"
 	"github.com/stretchr/testify/assert"
 )
 

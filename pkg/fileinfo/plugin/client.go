@@ -10,7 +10,7 @@ import (
 	"io"
 	"sync"
 
-	"github.com/schoentoon/go-cloud/pkg/fileinfo/types"
+	"github.com/leicht-cloud/leicht-cloud/pkg/fileinfo/types"
 	grpc "google.golang.org/grpc"
 )
 

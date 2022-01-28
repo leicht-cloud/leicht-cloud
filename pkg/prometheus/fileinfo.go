@@ -4,8 +4,8 @@ import (
 	"io"
 	"time"
 
+	"github.com/leicht-cloud/leicht-cloud/pkg/fileinfo/types"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/schoentoon/go-cloud/pkg/fileinfo/types"
 )
 
 type wrappedFileInfo struct {

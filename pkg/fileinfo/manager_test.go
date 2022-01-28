@@ -9,10 +9,9 @@ import (
 	"io/ioutil"
 	"testing"
 
-	_ "github.com/schoentoon/go-cloud/pkg/fileinfo/builtin"
-	"github.com/schoentoon/go-cloud/pkg/models"
-	"github.com/schoentoon/go-cloud/pkg/prometheus"
-	"github.com/schoentoon/go-cloud/pkg/storage/builtin/memory"
+	_ "github.com/leicht-cloud/leicht-cloud/pkg/fileinfo/builtin"
+	"github.com/leicht-cloud/leicht-cloud/pkg/models"
+	"github.com/leicht-cloud/leicht-cloud/pkg/storage/builtin/memory"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -1,4 +1,4 @@
-module github.com/schoentoon/go-cloud
+module github.com/leicht-cloud/leicht-cloud
 
 go 1.17
 
@@ -59,4 +59,6 @@ require (
 	github.com/prometheus/common v0.26.0 // indirect
 	github.com/prometheus/procfs v0.6.0 // indirect
 	gorm.io/plugin/prometheus v0.0.0-20211123021611-a2bccbfb6cbf // indirect
+	github.com/juju/ratelimit v1.0.1 // indirect
+	go.uber.org/atomic v1.7.0 // indirect
 )

@@ -5,19 +5,27 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/schoentoon/go-cloud/pkg/auth"
-	_ "github.com/schoentoon/go-cloud/pkg/fileinfo/builtin"
-	"github.com/schoentoon/go-cloud/pkg/models"
-	"github.com/schoentoon/go-cloud/pkg/storage"
+	"github.com/leicht-cloud/leicht-cloud/pkg/auth"
+	_ "github.com/leicht-cloud/leicht-cloud/pkg/fileinfo/builtin"
+	"github.com/leicht-cloud/leicht-cloud/pkg/http/helper/limiter"
+	"github.com/leicht-cloud/leicht-cloud/pkg/models"
+	"github.com/leicht-cloud/leicht-cloud/pkg/storage"
 	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 type downloadHandler struct {
 	Storage storage.StorageProvider
 }
 
-func newDownloadHandler(store storage.StorageProvider) http.Handler {
-	return auth.AuthHandler(&downloadHandler{Storage: store})
+func newDownloadHandler(db *gorm.DB, store storage.StorageProvider) http.Handler {
+	return auth.AuthHandler(
+		limiter.DownloadMiddleware(db,
+			&downloadHandler{
+				Storage: store,
+			},
+		),
+	)
 }
 
 func (h *downloadHandler) Serve(user *models.User, w http.ResponseWriter, r *http.Request) {

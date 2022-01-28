@@ -3,127 +3,26 @@
 <head>
   <link href="/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
   <link href="/css/dataTables.bootstrap5.min.css" rel="stylesheet" crossorigin="anonymous">
-  <script src="/js/jquery.min.js"></script>
-  <script src="/js/jquery.dataTables.min.js"></script>
-  <script src="/js/bootstrap.bundle.min.js"></script>
-  <script src="/js/dataTables.bootstrap5.min.js"></script>
+  <script src="/js/lib/jquery.min.js"></script>
+  <script src="/js/lib/jquery.dataTables.min.js"></script>
+  <script src="/js/lib/bootstrap.bundle.min.js"></script>
+  <script src="/js/lib/dataTables.bootstrap5.min.js"></script>
+  <script src="/js/lib/tus.min.js"></script>
 
   {{ navbar .Navbar }}
 
-  <script>
-    // thanks https://stackoverflow.com/a/20732091/1128596
-    function humanFileSize(size) {
-      if (size == 0) return 0;
-      var i = Math.floor(Math.log(size) / Math.log(1024));
-      return (size / Math.pow(1024, i)).toFixed(2) * 1 + ' ' + ['B', 'kB', 'MB', 'GB', 'TB'][i];
-    };
-
-    function alert(message, type) {
-      var wrapper = document.createElement('div')
-      wrapper.innerHTML = '<div class="alert alert-' + type + ' alert-dismissible" role="alert">' + message +
-        '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>'
-
-      var alertPlaceholder = document.getElementById('liveAlertPlaceholder');
-      alertPlaceholder.append(wrapper)
-    };
-
-    function fileInfo(file) {
-      var jelm = $('#offcanvasRightLabel');
-      jelm.text(file);
-      var body = $('#fileinfoBody');
-      body.empty();
-
-      var download = $('#offcanvasDownloadLink');
-      download.attr('href', document.location.protocol + '//' + document.location.host + '/api/download?filename=' +
-        file);
-      download.attr('download', document.location.protocol + '//' + document.location.host + '/api/download?filename=' +
-        file);
-
-      var offcanvas = new bootstrap.Offcanvas($('#offcanvasRight'));
-      offcanvas.show();
-
-      var add = function (title, text, name) {
-        var element = $(
-            '<div class="list-group-item justify-content-between text-break" style="font-family:monospace;"></div>')
-          .text(text);
-        var title = $('<div class="fw-bold"></div>').text(title);
-        var info = $(`<a data-bs-toggle="tooltip" data-bs-placement="left" data-bs-original-title="Provided by ` +
-          name + `"> </a>`);
-        new bootstrap.Tooltip(info);
-        // https://icons.getbootstrap.com/icons/info/
-        var icon = $(`<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-info-circle" viewBox="0 0 16 16">
-  <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
-  <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/>
-</svg>`);
-
-        info.append(icon);
-        title.append(info);
-        element.prepend(title);
-        body.append(element);
-      };
-
-      var socket = new WebSocket("ws://" + document.location.host + "/api/fileinfo?filename=" + file);
-      socket.onmessage = function (event) {
-        var json = JSON.parse(event.data);
-        if (json.title != "") {
-          add(json.title, json.human, json.name);
-        } else {
-          add(json.name, json.human, json.name);
-        }
-      };
-    };
-
-    $(document).ready(function () {
-      var datatable = $('#directory').DataTable({
-        "columnDefs": [{
-            "render": function (data, type, row) {
-              console.log(data);
-              return '<a href="#" onclick="fileInfo(\'' + data + '\');">' + data + '</a>';
-            },
-            "targets": 0 // name
-          },
-          {
-            "render": function (data, type, row) {
-              return new Date(Date.parse(data)).toLocaleString();
-            },
-            "targets": 1 // created_at
-          },
-          {
-            "render": function (data, type, row) {
-              return humanFileSize(data);
-            },
-            "targets": 2 // size
-          }
-        ]
-      });
-
-      $.get("/api/list")
-        .fail(function (xhr, status, error) {
-          alert(xhr.responseText, 'danger');
-        })
-        .done(function (data) {
-          data = data.split('\n');
-          data.forEach(function (data) {
-            json = JSON.parse(data);
-            datatable.row.add([
-              json.name,
-              json.created_at,
-              json.size
-            ]).draw(false);
-          });
-
-          datatable.draw();
-        });
-    });
-  </script>
+  <script src="/js/folder.js"></script>
 </head>
 
 <body class="text-center">
   <div class="container">
     <form enctype="multipart/form-data" action="/api/upload" method="POST">
       <div class="file-upload-wrapper input-group">
-        <input type="file" id="input-file-now-custom-2" name="file" class="file-upload form-control-sm" />
-        <button class="btn btn-primary" type="submit">Upload</button>
+        <input type="file" id="input-file-now-custom-2" name="file" class="file-upload form-control-sm" multiple/>
+        <button class="btn btn-primary" id="uploadButton">Upload</button>
+      </div>
+      <div class="progress" style="visibility:hidden">
+        <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%;"></div>
       </div>
     </form>
 

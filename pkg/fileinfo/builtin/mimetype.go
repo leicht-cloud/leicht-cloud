@@ -5,7 +5,7 @@ import (
 
 	"github.com/h2non/filetype"
 	"github.com/h2non/filetype/types"
-	fileinfo "github.com/schoentoon/go-cloud/pkg/fileinfo/types"
+	fileinfo "github.com/leicht-cloud/leicht-cloud/pkg/fileinfo/types"
 )
 
 func init() {

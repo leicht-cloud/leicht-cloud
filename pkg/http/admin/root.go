@@ -2,54 +2,33 @@ package admin
 
 import (
 	"net/http"
-	"strings"
 
-	"github.com/schoentoon/go-cloud/pkg/auth"
-	"github.com/schoentoon/go-cloud/pkg/http/template"
-	"github.com/schoentoon/go-cloud/pkg/plugin"
+	"github.com/leicht-cloud/leicht-cloud/pkg/http/template"
+	"github.com/leicht-cloud/leicht-cloud/pkg/models"
+	"gorm.io/gorm"
 )
 
 type rootHandler struct {
 	StaticHandler http.Handler
-	PluginManager *plugin.Manager
+	AdminNavbar   template.AdminNavbarData
+	DB            *gorm.DB
 }
 
 type adminTemplateData struct {
-	Navbar  template.NavbarData
-	Plugins []string
-
-	Page       string
-	PluginView pluginView
+	Navbar      template.NavbarData
+	AdminNavbar template.AdminNavbarData
 }
 
-type pluginView struct {
-	Name string
-}
-
-func (h *rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	user := auth.GetUserFromRequest(r)
-	if user == nil || !user.Admin {
-		// we redirect you to / as you don't have permission to view the admin panel
-		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
-		return
-	}
+func (h *rootHandler) Serve(user *models.User, w http.ResponseWriter, r *http.Request) {
+	// internal rewrite to admin page, so we render that
+	r.URL.Path = "/admin.gohtml"
 
 	data := adminTemplateData{
 		Navbar: template.NavbarData{
 			Admin: user.Admin,
 		},
-		Plugins: h.PluginManager.Plugins(),
+		AdminNavbar: h.AdminNavbar,
 	}
-
-	if strings.HasPrefix(r.URL.Path, "/admin/plugin/") {
-		data.Page = "plugin"
-		data.PluginView = pluginView{
-			Name: strings.TrimPrefix(r.URL.Path, "/admin/plugin/"),
-		}
-	}
-
-	// internal rewrite to admin page, so we render that
-	r.URL.Path = "/admin.gohtml"
 
 	ctx := template.AttachTemplateData(r.Context(), data)
 

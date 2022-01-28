@@ -11,7 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/schoentoon/go-cloud/pkg/plugin"
+	"github.com/leicht-cloud/leicht-cloud/pkg/plugin"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )

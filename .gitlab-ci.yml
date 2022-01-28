@@ -12,7 +12,6 @@ test:
     - go install google.golang.org/grpc/cmd/protoc-gen-go-grpc
     - go generate ./...
   script:
-    - find plugins -type d -mindepth 1 -maxdepth 1 -exec sh -c 'cd ./{} && go build -ldflags '-extldflags "-static"' .' \;
     - go test -v -cover ./...
 
 golangci-linter:
@@ -43,7 +42,6 @@ build:
     - go generate ./...
   script:
     - find cmd -type d -mindepth 1 -maxdepth 1 -exec go build ./{}/... \;
-    - find plugins -type d -mindepth 1 -maxdepth 1 -exec sh -c 'cd ./{} && go build -ldflags '-extldflags "-static"' .' \;
   artifacts:
     untracked: true
 

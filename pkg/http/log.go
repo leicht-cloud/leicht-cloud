@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/schoentoon/go-cloud/pkg/auth"
+	"github.com/leicht-cloud/leicht-cloud/pkg/auth"
 	"github.com/sirupsen/logrus"
 )
 
@@ -63,6 +63,7 @@ func WithLogging(h http.Handler) http.Handler {
 		user := auth.GetUserFromRequest(req)
 
 		entry := logrus.WithFields(logrus.Fields{
+			"src":      req.RemoteAddr,
 			"uri":      req.RequestURI,
 			"method":   req.Method,
 			"status":   responseData.status,

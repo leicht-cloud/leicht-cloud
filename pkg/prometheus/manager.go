@@ -4,10 +4,10 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/leicht-cloud/leicht-cloud/pkg/fileinfo/types"
+	"github.com/leicht-cloud/leicht-cloud/pkg/storage"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/schoentoon/go-cloud/pkg/fileinfo/types"
-	"github.com/schoentoon/go-cloud/pkg/storage"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 	gormprom "gorm.io/plugin/prometheus"

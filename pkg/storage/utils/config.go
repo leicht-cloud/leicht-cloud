@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/schoentoon/go-cloud/pkg/plugin"
-	"github.com/schoentoon/go-cloud/pkg/storage"
-	"github.com/schoentoon/go-cloud/pkg/storage/builtin/local"
-	storagePlugin "github.com/schoentoon/go-cloud/pkg/storage/plugin"
+	"github.com/leicht-cloud/leicht-cloud/pkg/plugin"
+	"github.com/leicht-cloud/leicht-cloud/pkg/storage"
+	"github.com/leicht-cloud/leicht-cloud/pkg/storage/builtin/local"
+	storagePlugin "github.com/leicht-cloud/leicht-cloud/pkg/storage/plugin"
 )
 
 type Config struct {
@@ -17,7 +17,11 @@ type Config struct {
 }
 
 func (c *Config) CreateProvider(pManager *plugin.Manager) (storage.StorageProvider, error) {
-	return fromConfig(c, pManager)
+	out, err := fromConfig(c, pManager)
+	if err != nil {
+		return nil, err
+	}
+	return &ValidateWrapper{Next: out}, nil
 }
 
 func fromConfig(cfg *Config, pManager *plugin.Manager) (storage.StorageProvider, error) {
@@ -30,7 +34,12 @@ func fromConfig(cfg *Config, pManager *plugin.Manager) (storage.StorageProvider,
 	} else if strings.HasPrefix(cfg.Provider, "plugin:") {
 		name := strings.TrimPrefix(cfg.Provider, "plugin:")
 
-		conn, err := pManager.Start(name)
+		plugin, err := pManager.Start(name)
+		if err != nil {
+			return nil, err
+		}
+
+		conn, err := plugin.GrpcConn()
 		if err != nil {
 			return nil, err
 		}

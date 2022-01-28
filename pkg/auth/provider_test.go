@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/schoentoon/go-cloud/pkg/models"
+	"github.com/leicht-cloud/leicht-cloud/pkg/models"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -21,7 +21,12 @@ func setupProvider(t *testing.T) (*gorm.DB, *Provider) {
 		t.Fatal(err)
 	}
 
-	return db, NewProvider(db)
+	provider, err := (&Config{}).Create(db)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return db, provider
 }
 
 func TestAuthenticate(t *testing.T) {

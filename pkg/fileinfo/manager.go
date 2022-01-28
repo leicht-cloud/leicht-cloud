@@ -7,11 +7,11 @@ import (
 	"io/ioutil"
 	"strings"
 
-	fileinfoPlugin "github.com/schoentoon/go-cloud/pkg/fileinfo/plugin"
-	"github.com/schoentoon/go-cloud/pkg/fileinfo/types"
-	"github.com/schoentoon/go-cloud/pkg/plugin"
-	"github.com/schoentoon/go-cloud/pkg/prometheus"
-	"github.com/schoentoon/go-cloud/pkg/storage"
+	fileinfoPlugin "github.com/leicht-cloud/leicht-cloud/pkg/fileinfo/plugin"
+	"github.com/leicht-cloud/leicht-cloud/pkg/fileinfo/types"
+	"github.com/leicht-cloud/leicht-cloud/pkg/plugin"
+	"github.com/leicht-cloud/leicht-cloud/pkg/prometheus"
+	"github.com/leicht-cloud/leicht-cloud/pkg/storage"
 	"github.com/sirupsen/logrus"
 )
 
@@ -38,7 +38,12 @@ func NewManager(pManager *plugin.Manager, prom *prometheus.Manager, mimetypeProv
 	for _, name := range provider {
 		if strings.HasPrefix(name, "plugin:") {
 			name = strings.TrimPrefix(name, "plugin:")
-			conn, err := pManager.Start(name)
+			plugin, err := pManager.Start(name)
+			if err != nil {
+				return nil, err
+			}
+
+			conn, err := plugin.GrpcConn()
 			if err != nil {
 				return nil, err
 			}

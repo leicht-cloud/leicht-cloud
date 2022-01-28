@@ -3,62 +3,51 @@ package plugin
 import (
 	"archive/tar"
 	"compress/gzip"
-	"context"
 	"errors"
 	"fmt"
 	"io"
-	"net"
 	"os"
 	"path/filepath"
 	"runtime"
 
-	_ "github.com/schoentoon/go-cloud/pkg/plugin/namespace"
-
 	"github.com/sirupsen/logrus"
-	"google.golang.org/grpc"
 )
 
 type Manager struct {
 	cfg *Config
 
-	plugins map[string]*plugin
+	runnerFactory RunnerFactory
+	plugins       map[string]*plugin
 }
 
 type Config struct {
-	Debug       bool     `yaml:"debug"`
-	Path        []string `yaml:"path"`
-	WorkDir     string   `yaml:"workdir"`
-	Namespaced  *bool    `yaml:"namespaced,omitempty"`
-	NetworkMode string   `yaml:"network_mode"`
+	Debug   bool                   `yaml:"debug"`
+	Path    []string               `yaml:"path"`
+	WorkDir string                 `yaml:"workdir"`
+	Runner  string                 `yaml:"runtime"`
+	Options map[string]interface{} `yaml:"options"`
 }
 
 func (c *Config) CreateManager() (*Manager, error) {
-	if c.Namespaced == nil {
-		c.Namespaced = new(bool)
-		*c.Namespaced = true
+	runner, err := GetRunnerFactory(c.Runner)
+	if err != nil {
+		return nil, err
 	}
 
-	if *c.Namespaced {
-		// we check whether the value in network_mode is valid or not
-		// this however is only relevant if we're actually doing namespacing..
-		switch c.NetworkMode {
-		case "host":
-		case "userspace":
-		case "": // we default to userspace in case it's empty
-			c.NetworkMode = "userspace"
-		default:
-			return nil, fmt.Errorf("Invalid network mode: %s", c.NetworkMode)
-		}
+	err = os.MkdirAll(c.WorkDir, 0700)
+	if err != nil {
+		return nil, err
 	}
 
-	err := os.MkdirAll(c.WorkDir, 0700)
+	err = runner.configure(c.Options)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Manager{
-		cfg:     c,
-		plugins: make(map[string]*plugin),
+		cfg:           c,
+		runnerFactory: runner,
+		plugins:       make(map[string]*plugin),
 	}, nil
 }
 
@@ -194,13 +183,13 @@ func (m *Manager) prepareDirectory(name string) (*Manifest, error) {
 	return nil, fmt.Errorf("Plugin not found: %s", name)
 }
 
-func (m *Manager) Start(name string) (*grpc.ClientConn, error) {
+func (m *Manager) Start(name string) (PluginInterface, error) {
 	manifest, err := m.prepareDirectory(name)
 	if err != nil {
 		return nil, err
 	}
 
-	plugin, err := newPluginInstance(manifest, m.cfg, name)
+	plugin, err := m.newPluginInstance(manifest, m.cfg, name)
 	if err != nil {
 		return nil, err
 	}
@@ -212,19 +201,5 @@ func (m *Manager) Start(name string) (*grpc.ClientConn, error) {
 
 	m.plugins[name] = plugin
 
-	err = plugin.waitForSocket()
-	if err != nil {
-		return nil, err
-	}
-
-	return grpc.Dial(plugin.SocketFile(),
-		grpc.WithInsecure(),
-		grpc.WithBlock(),
-		grpc.WithReadBufferSize(0),
-		grpc.WithWriteBufferSize(0),
-		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
-			var dialer net.Dialer
-			return dialer.DialContext(ctx, "unix", addr)
-		}),
-	)
+	return plugin, nil
 }

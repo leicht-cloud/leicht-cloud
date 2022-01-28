@@ -1,8 +1,8 @@
 package fileinfo
 
 import (
-	"github.com/schoentoon/go-cloud/pkg/plugin"
-	"github.com/schoentoon/go-cloud/pkg/prometheus"
+	"github.com/leicht-cloud/leicht-cloud/pkg/plugin"
+	"github.com/leicht-cloud/leicht-cloud/pkg/prometheus"
 )
 
 type Config struct {

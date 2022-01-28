@@ -19,7 +19,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/schoentoon/go-cloud/pkg/models"
+	"github.com/leicht-cloud/leicht-cloud/pkg/models"
 )
 
 // TODO: Add benchmarks and fuzzing?
@@ -39,8 +39,10 @@ func TestStorageProvider(provider StorageProvider, t *testing.T) {
 		t.Run("File/16KB", func(t *testing.T) { testFile(t, user, provider, 1024*16) })
 		t.Run("File/32KB", func(t *testing.T) { testFile(t, user, provider, 1024*32) })
 		t.Run("File/1MB", func(t *testing.T) { testFile(t, user, provider, 1024*1024) })
-		//t.Run("File/8MB", func(t *testing.T) { testFile(t, user, provider, 1024*1024*8) })
-		//t.Run("File/16MB", func(t *testing.T) { testFile(t, user, provider, 1024*1024*16) })
+		t.Run("File/8MB", func(t *testing.T) { testFile(t, user, provider, 1024*1024*8) })
+		t.Run("File/16MB", func(t *testing.T) { testFile(t, user, provider, 1024*1024*16) })
+		t.Run("File/32MB", func(t *testing.T) { testFile(t, user, provider, 1024*1024*32) })
+		t.Run("File/64MB", func(t *testing.T) { testFile(t, user, provider, 1024*1024*64) })
 	}
 }
 
@@ -164,6 +166,10 @@ func BenchmarkStorageProvider(storage StorageProvider, b *testing.B) {
 		b.Run("File/16KB", func(b *testing.B) { benchmarkFile(b, user, storage, 1024*16) })
 		b.Run("File/32KB", func(b *testing.B) { benchmarkFile(b, user, storage, 1024*32) })
 		b.Run("File/1MB", func(b *testing.B) { benchmarkFile(b, user, storage, 1024*1024) })
+		b.Run("File/8MB", func(b *testing.B) { benchmarkFile(b, user, storage, 1024*1024*8) })
+		b.Run("File/16MB", func(b *testing.B) { benchmarkFile(b, user, storage, 1024*1024*16) })
+		b.Run("File/32MB", func(b *testing.B) { benchmarkFile(b, user, storage, 1024*1024*32) })
+		b.Run("File/64MB", func(b *testing.B) { benchmarkFile(b, user, storage, 1024*1024*64) })
 	}
 }
 

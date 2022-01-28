@@ -1,7 +1,12 @@
 pkg/http/assets/css/
-pkg/http/assets/js/
-./go-cloud
+pkg/http/assets/js/lib/
+
+# binaries
+/leicht-cloud
+/build-plugin
+
+# files to help with testing
 *.db
 tmp/
-
-*.pb.go
+*.yml
+!config.yml

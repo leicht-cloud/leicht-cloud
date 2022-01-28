@@ -5,12 +5,12 @@ import (
 	"net/http"
 
 	"github.com/gorilla/websocket"
-	"github.com/schoentoon/go-cloud/pkg/auth"
-	"github.com/schoentoon/go-cloud/pkg/fileinfo"
-	_ "github.com/schoentoon/go-cloud/pkg/fileinfo/builtin"
-	"github.com/schoentoon/go-cloud/pkg/fileinfo/types"
-	"github.com/schoentoon/go-cloud/pkg/models"
-	"github.com/schoentoon/go-cloud/pkg/storage"
+	"github.com/leicht-cloud/leicht-cloud/pkg/auth"
+	"github.com/leicht-cloud/leicht-cloud/pkg/fileinfo"
+	_ "github.com/leicht-cloud/leicht-cloud/pkg/fileinfo/builtin"
+	"github.com/leicht-cloud/leicht-cloud/pkg/fileinfo/types"
+	"github.com/leicht-cloud/leicht-cloud/pkg/models"
+	"github.com/leicht-cloud/leicht-cloud/pkg/storage"
 	"github.com/sirupsen/logrus"
 )
 
