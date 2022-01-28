@@ -11,6 +11,7 @@ import (
 
 	_ "github.com/leicht-cloud/leicht-cloud/pkg/fileinfo/builtin"
 	"github.com/leicht-cloud/leicht-cloud/pkg/models"
+	"github.com/leicht-cloud/leicht-cloud/pkg/prometheus"
 	"github.com/leicht-cloud/leicht-cloud/pkg/storage/builtin/memory"
 	"github.com/stretchr/testify/assert"
 )
