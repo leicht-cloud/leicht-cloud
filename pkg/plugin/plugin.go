@@ -4,7 +4,9 @@ import (
 	"context"
 	"net"
 	"path/filepath"
+	"time"
 
+	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 )
 
@@ -58,7 +60,9 @@ func (p *plugin) GrpcConn() (*grpc.ClientConn, error) {
 		grpc.WithReadBufferSize(0),
 		grpc.WithWriteBufferSize(0),
 		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
+			logrus.Debugf("Connecting: %s", addr)
 			var dialer net.Dialer
+			dialer.Timeout = time.Second * 3
 			return dialer.DialContext(ctx, "unix", addr)
 		}),
 	)
