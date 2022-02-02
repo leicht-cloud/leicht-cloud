@@ -57,7 +57,7 @@ func main() {
 	}
 
 	logrus.Info("Initializing plugin manager")
-	pluginManager, err := config.Plugin.CreateManager()
+	pluginManager, err := config.Plugin.CreateManager(prom)
 	if err != nil {
 		logrus.Fatal(err)
 	}

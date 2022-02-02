@@ -10,12 +10,15 @@ import (
 	"path/filepath"
 	"runtime"
 
+	prom "github.com/leicht-cloud/leicht-cloud/pkg/prometheus"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 )
 
 type Manager struct {
 	cfg *Config
 
+	promManager   *prom.Manager
 	runnerFactory RunnerFactory
 	plugins       map[string]*plugin
 }
@@ -28,7 +31,7 @@ type Config struct {
 	Options map[string]interface{} `yaml:"options"`
 }
 
-func (c *Config) CreateManager() (*Manager, error) {
+func (c *Config) CreateManager(prom *prom.Manager) (*Manager, error) {
 	runner, err := GetRunnerFactory(c.Runner)
 	if err != nil {
 		return nil, err
@@ -47,6 +50,7 @@ func (c *Config) CreateManager() (*Manager, error) {
 	return &Manager{
 		cfg:           c,
 		runnerFactory: runner,
+		promManager:   prom,
 		plugins:       make(map[string]*plugin),
 	}, nil
 }
@@ -195,6 +199,11 @@ func (m *Manager) Start(name string) (PluginInterface, error) {
 	}
 
 	err = plugin.Start()
+	if err != nil {
+		return nil, err
+	}
+
+	err = prometheus.Register(plugin)
 	if err != nil {
 		return nil, err
 	}
