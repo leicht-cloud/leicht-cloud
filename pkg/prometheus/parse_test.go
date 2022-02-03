@@ -14,7 +14,7 @@ import (
 var units = []struct {
 	in             *dto.MetricFamily
 	extraLabels    map[string]string
-	expectedMetric prometheus.Metric
+	expectedMetric []prometheus.Metric
 	expectedError  error
 }{
 	{
@@ -39,17 +39,19 @@ var units = []struct {
 		extraLabels: map[string]string{
 			"plugin": "test",
 		},
-		expectedMetric: prometheus.MustNewConstMetric(
-			prometheus.NewDesc(
-				"name",
-				"two-line\n doc  str\\ing",
-				[]string{"labelname", "plugin"},
-				nil,
+		expectedMetric: []prometheus.Metric{
+			prometheus.MustNewConstMetric(
+				prometheus.NewDesc(
+					"name",
+					"two-line\n doc  str\\ing",
+					[]string{"labelname", "plugin"},
+					nil,
+				),
+				prometheus.CounterValue,
+				math.NaN(),
+				"val1", "test",
 			),
-			prometheus.CounterValue,
-			math.NaN(),
-			"val1", "test",
-		),
+		},
 		expectedError: nil,
 	},
 	{
@@ -74,20 +76,49 @@ var units = []struct {
 					},
 					TimestampMs: proto.Int64(54321),
 				},
+				{
+					Label: []*dto.LabelPair{
+						{
+							Name:  proto.String("labelname"),
+							Value: proto.String("val2"),
+						},
+						{
+							Name:  proto.String("basename"),
+							Value: proto.String("base\"v\\al\nue"),
+						},
+					},
+					Counter: &dto.Counter{
+						Value: proto.Float64(.23),
+					},
+					TimestampMs: proto.Int64(1234567890),
+				},
 			},
 		},
 		extraLabels: map[string]string{},
-		expectedMetric: prometheus.MustNewConstMetric(
-			prometheus.NewDesc(
-				"name2",
-				"doc str\"ing 2",
-				[]string{"labelname", "basename"},
-				nil,
+		expectedMetric: []prometheus.Metric{
+			prometheus.MustNewConstMetric(
+				prometheus.NewDesc(
+					"name2",
+					"doc str\"ing 2",
+					[]string{"labelname", "basename"},
+					nil,
+				),
+				prometheus.GaugeValue,
+				math.Inf(+1),
+				"val2", "basevalue2",
 			),
-			prometheus.GaugeValue,
-			math.Inf(+1),
-			"val2", "basevalue2",
-		),
+			prometheus.MustNewConstMetric(
+				prometheus.NewDesc(
+					"name2",
+					"doc str\"ing 2",
+					[]string{"labelname", "basename"},
+					nil,
+				),
+				prometheus.GaugeValue,
+				math.Inf(+1),
+				"val2", "base\"v\\al\nue",
+			),
+		},
 		expectedError: nil,
 	},
 	{
@@ -121,21 +152,23 @@ var units = []struct {
 			},
 		},
 		extraLabels: map[string]string{},
-		expectedMetric: prometheus.MustNewConstSummary(
-			prometheus.NewDesc(
-				"my_summary",
-				"",
-				[]string{"n1"},
-				nil,
+		expectedMetric: []prometheus.Metric{
+			prometheus.MustNewConstSummary(
+				prometheus.NewDesc(
+					"my_summary",
+					"",
+					[]string{"n1"},
+					nil,
+				),
+				42,
+				4711,
+				map[float64]float64{
+					0.5: 110,
+					0.9: 140,
+				},
+				"val1",
 			),
-			42,
-			4711,
-			map[float64]float64{
-				0.5: 110,
-				0.9: 140,
-			},
-			"val1",
-		),
+		},
 		expectedError: nil,
 	},
 	{
@@ -151,16 +184,18 @@ var units = []struct {
 			},
 		},
 		extraLabels: map[string]string{},
-		expectedMetric: prometheus.MustNewConstMetric(
-			prometheus.NewDesc(
-				"minimal_metric",
-				"",
-				[]string{},
-				nil,
+		expectedMetric: []prometheus.Metric{
+			prometheus.MustNewConstMetric(
+				prometheus.NewDesc(
+					"minimal_metric",
+					"",
+					[]string{},
+					nil,
+				),
+				prometheus.UntypedValue,
+				1.234,
 			),
-			prometheus.UntypedValue,
-			1.234,
-		),
+		},
 		expectedError: nil,
 	},
 	{
@@ -200,23 +235,25 @@ var units = []struct {
 			},
 		},
 		extraLabels: map[string]string{},
-		expectedMetric: prometheus.MustNewConstHistogram(
-			prometheus.NewDesc(
-				"request_duration_microseconds",
-				"The response latency.",
-				[]string{},
-				nil,
+		expectedMetric: []prometheus.Metric{
+			prometheus.MustNewConstHistogram(
+				prometheus.NewDesc(
+					"request_duration_microseconds",
+					"The response latency.",
+					[]string{},
+					nil,
+				),
+				2693,
+				1756047.3,
+				map[float64]uint64{
+					100:          123,
+					120:          412,
+					144:          592,
+					172.8:        1524,
+					math.Inf(+1): 2693,
+				},
 			),
-			2693,
-			1756047.3,
-			map[float64]uint64{
-				100:          123,
-				120:          412,
-				144:          592,
-				172.8:        1524,
-				math.Inf(+1): 2693,
-			},
-		),
+		},
 		expectedError: nil,
 	},
 }
@@ -227,14 +264,18 @@ func TestParseToMetric(t *testing.T) {
 			out, err := ParsedToMetric(unit.extraLabels, unit.in)
 			assert.Equal(t, unit.expectedError, err)
 			if err != nil {
-				assert.Equal(t, unit.expectedMetric.Desc(), out.Desc())
+				assert.Len(t, unit.expectedMetric, len(out))
 
-				// ideally we would deep inspect the 2 structures, for now comparing the textual represtation of the protobuf message is enough
-				var m1, m2 dto.Metric
-				assert.NoError(t, unit.expectedMetric.Write(&m1))
-				assert.NoError(t, out.Write(&m2))
+				for i := range out {
+					assert.Equal(t, unit.expectedMetric[i].Desc(), out[i].Desc())
 
-				assert.Equal(t, m1.String(), m2.String())
+					// ideally we would deep inspect the 2 structures, for now comparing the textual represtation of the protobuf message is enough
+					var m1, m2 dto.Metric
+					assert.NoError(t, unit.expectedMetric[i].Write(&m1))
+					assert.NoError(t, out[i].Write(&m2))
+
+					assert.Equal(t, m1.String(), m2.String())
+				}
 			}
 		})
 	}

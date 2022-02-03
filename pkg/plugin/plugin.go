@@ -95,12 +95,14 @@ func (p *plugin) Collect(ch chan<- prometheus.Metric) {
 		"plugin": p.name,
 	}
 	for _, parsedMetric := range out {
-		metric, err := prom.ParsedToMetric(label, parsedMetric)
+		metrics, err := prom.ParsedToMetric(label, parsedMetric)
 		if err != nil {
 			logrus.Error(err)
 			continue
 		}
-		ch <- metric
+		for _, metric := range metrics {
+			ch <- metric
+		}
 	}
 }
 
