@@ -6,6 +6,7 @@ import (
 	"github.com/leicht-cloud/leicht-cloud/pkg/auth"
 	"github.com/leicht-cloud/leicht-cloud/pkg/fileinfo"
 	"github.com/leicht-cloud/leicht-cloud/pkg/plugin"
+	"github.com/leicht-cloud/leicht-cloud/pkg/prometheus"
 	storage "github.com/leicht-cloud/leicht-cloud/pkg/storage/utils"
 	"gopkg.in/yaml.v2"
 )
@@ -15,10 +16,11 @@ type Config struct {
 	Debug bool   `yaml:"debug"`
 	DB    string `yaml:"db"`
 
-	Storage  storage.Config  `yaml:"storage"`
-	Plugin   plugin.Config   `yaml:"plugin"`
-	FileInfo fileinfo.Config `yaml:"fileinfo"`
-	Auth     auth.Config     `yaml:"auth"`
+	Storage    storage.Config    `yaml:"storage"`
+	Plugin     plugin.Config     `yaml:"plugin"`
+	FileInfo   fileinfo.Config   `yaml:"fileinfo"`
+	Auth       auth.Config       `yaml:"auth"`
+	Prometheus prometheus.Config `yaml:"prometheus"`
 }
 
 // ReadConfig reads a file into the config structure

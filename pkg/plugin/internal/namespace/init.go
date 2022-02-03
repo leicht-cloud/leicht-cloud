@@ -107,7 +107,8 @@ func pluginNamespace() {
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
 	cmd.Env = append(os.Environ(),
-		"UNIXSOCKET=/grpc.sock",
+		"GRPC_UNIXSOCKET=/grpc.sock",
+		"HTTP_UNIXSOCKET=/http.sock",
 	)
 	err = cmd.Run()
 	if err != nil {

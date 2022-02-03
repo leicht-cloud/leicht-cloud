@@ -10,6 +10,7 @@ import (
 	fileinfoPlugin "github.com/leicht-cloud/leicht-cloud/pkg/fileinfo/plugin"
 	"github.com/leicht-cloud/leicht-cloud/pkg/fileinfo/types"
 	"github.com/leicht-cloud/leicht-cloud/pkg/plugin"
+	"github.com/leicht-cloud/leicht-cloud/pkg/prometheus"
 	"github.com/leicht-cloud/leicht-cloud/pkg/storage"
 	"github.com/sirupsen/logrus"
 )
@@ -23,7 +24,7 @@ type Options struct {
 	Render bool
 }
 
-func NewManager(pManager *plugin.Manager, mimetypeProvider string, provider ...string) (*Manager, error) {
+func NewManager(pManager *plugin.Manager, prom *prometheus.Manager, mimetypeProvider string, provider ...string) (*Manager, error) {
 	out := &Manager{
 		providers: map[string]types.FileInfoProvider{},
 	}
@@ -51,13 +52,13 @@ func NewManager(pManager *plugin.Manager, mimetypeProvider string, provider ...s
 			if err != nil {
 				return nil, err
 			}
-			out.providers[name] = provider
+			out.providers[name] = prom.WrapFileInfo(provider, name)
 		} else {
 			p, err := types.GetProvider(name)
 			if err != nil {
 				return nil, err
 			}
-			out.providers[name] = p
+			out.providers[name] = prom.WrapFileInfo(p, name)
 		}
 	}
 

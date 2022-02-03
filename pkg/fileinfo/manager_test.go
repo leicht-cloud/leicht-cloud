@@ -11,9 +11,12 @@ import (
 
 	_ "github.com/leicht-cloud/leicht-cloud/pkg/fileinfo/builtin"
 	"github.com/leicht-cloud/leicht-cloud/pkg/models"
+	"github.com/leicht-cloud/leicht-cloud/pkg/prometheus"
 	"github.com/leicht-cloud/leicht-cloud/pkg/storage/builtin/memory"
 	"github.com/stretchr/testify/assert"
 )
+
+var promManager, _ = (&prometheus.Config{Enabled: false}).Create()
 
 func newTestFS(t *testing.T) *memory.StorageProvider {
 	return memory.NewStorageProvider()
@@ -76,7 +79,7 @@ func TestLimitedRead(t *testing.T) {
 	store := newTestFS(t)
 	fill(t, store, "/1024", 1024)
 
-	manager, err := NewManager(nil, "gonative")
+	manager, err := NewManager(nil, promManager, "gonative")
 	assert.NoError(t, err)
 	manager.providers["test"] = &testProvider{
 		t:   t,
@@ -94,7 +97,7 @@ func TestMultiprocess(t *testing.T) {
 	store := newTestFS(t)
 	fill(t, store, "/1024", 1024)
 
-	manager, err := NewManager(nil, "gonative")
+	manager, err := NewManager(nil, promManager, "gonative")
 	assert.NoError(t, err)
 	manager.providers["test"] = &testProvider{
 		t:      t,
@@ -145,7 +148,7 @@ func TestPanic(t *testing.T) {
 	store := newTestFS(t)
 	fill(t, store, "/1024", 1024)
 
-	manager, err := NewManager(nil, "gonative")
+	manager, err := NewManager(nil, promManager, "gonative")
 	assert.NoError(t, err)
 	manager.providers["panic"] = &panicProvider{}
 

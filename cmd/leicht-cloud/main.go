@@ -45,21 +45,32 @@ func main() {
 		logrus.Fatal(err)
 	}
 
+	prom, err := config.Prometheus.Create()
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	defer prom.Close()
+
+	err = prom.WrapDB(db)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
 	logrus.Info("Initializing plugin manager")
-	pluginManager, err := config.Plugin.CreateManager()
+	pluginManager, err := config.Plugin.CreateManager(prom)
 	if err != nil {
 		logrus.Fatal(err)
 	}
 	defer pluginManager.Close()
 
 	logrus.Infof("Initializing storage provider %s", config.Storage.Provider)
-	storage, err := config.Storage.CreateProvider(pluginManager)
+	storage, err := prom.WrapStorage(config.Storage.CreateProvider(pluginManager))
 	if err != nil {
 		logrus.Fatal(err)
 	}
 
 	logrus.Infof("Initializing file info providers")
-	fileinfo, err := config.FileInfo.CreateProvider(pluginManager)
+	fileinfo, err := config.FileInfo.CreateProvider(pluginManager, prom)
 	if err != nil {
 		logrus.Fatal(err)
 	}

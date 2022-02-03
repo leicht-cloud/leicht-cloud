@@ -32,7 +32,8 @@ func (l *localFactory) Create(opts *RunOptions) (Runner, error) {
 		Stderr: opts.Stdout,
 		Path:   filepath.Join(opts.Config.WorkDir, opts.Name, "plugin"),
 		Env: []string{
-			fmt.Sprintf("UNIXSOCKET=%s", filepath.Join(opts.Config.WorkDir, opts.Name, "grpc.sock")),
+			fmt.Sprintf("GRPC_UNIXSOCKET=%s", filepath.Join(opts.Config.WorkDir, opts.Name, "grpc.sock")),
+			fmt.Sprintf("HTTP_UNIXSOCKET=%s", filepath.Join(opts.Config.WorkDir, opts.Name, "http.sock")),
 			fmt.Sprintf("PLUGIN=%s", opts.Name),
 		},
 	}
