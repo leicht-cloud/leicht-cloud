@@ -106,7 +106,7 @@ func parseGauge(extraLabels map[string]string, raw *io_prometheus_client.MetricF
 				labels,
 				nil),
 			prometheus.GaugeValue,
-			metric.Counter.GetValue(),
+			metric.Gauge.GetValue(),
 			parseLabelValues(labels, extraLabels, metric)...,
 		)
 		if err != nil {
@@ -170,7 +170,7 @@ func parseUntyped(extraLabels map[string]string, raw *io_prometheus_client.Metri
 				labels,
 				nil),
 			prometheus.UntypedValue,
-			metric.Counter.GetValue(),
+			metric.Untyped.GetValue(),
 			parseLabelValues(labels, extraLabels, metric)...,
 		)
 		if err != nil {

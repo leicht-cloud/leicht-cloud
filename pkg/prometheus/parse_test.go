@@ -44,12 +44,12 @@ var units = []struct {
 				prometheus.NewDesc(
 					"name",
 					"two-line\n doc  str\\ing",
-					[]string{"labelname", "plugin"},
+					[]string{"plugin", "labelname"},
 					nil,
 				),
 				prometheus.CounterValue,
 				math.NaN(),
-				"val1", "test",
+				"test", "val1",
 			),
 		},
 		expectedError: nil,
@@ -87,8 +87,8 @@ var units = []struct {
 							Value: proto.String("base\"v\\al\nue"),
 						},
 					},
-					Counter: &dto.Counter{
-						Value: proto.Float64(.23),
+					Gauge: &dto.Gauge{
+						Value: proto.Float64(0.23),
 					},
 					TimestampMs: proto.Int64(1234567890),
 				},
@@ -115,7 +115,7 @@ var units = []struct {
 					nil,
 				),
 				prometheus.GaugeValue,
-				math.Inf(+1),
+				0.23,
 				"val2", "base\"v\\al\nue",
 			),
 		},
@@ -263,7 +263,8 @@ func TestParseToMetric(t *testing.T) {
 		t.Run(fmt.Sprintf("test %d", count), func(t *testing.T) {
 			out, err := ParsedToMetric(unit.extraLabels, unit.in)
 			assert.Equal(t, unit.expectedError, err)
-			if err != nil {
+
+			if err == nil {
 				assert.Len(t, unit.expectedMetric, len(out))
 
 				for i := range out {
