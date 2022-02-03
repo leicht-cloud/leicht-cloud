@@ -46,6 +46,11 @@ func newUploadHandler(db *gorm.DB, store storage.StorageProvider) http.Handler {
 }
 
 func (h *uploadHandler) Serve(user *models.User, w http.ResponseWriter, r *http.Request) {
+	dir := r.URL.Query().Get("dir")
+	if dir == "" {
+		dir = "/"
+	}
+
 	if r.Method == http.MethodOptions {
 		w.Header().Add("Tus-Extension", "creation")
 		w.Header().Add("Tus-Resumable", "1.0.0")
@@ -101,7 +106,7 @@ func (h *uploadHandler) Serve(user *models.User, w http.ResponseWriter, r *http.
 			Length: length,
 		}
 
-		file, err := h.Storage.File(r.Context(), user, path.Join("/", filename))
+		file, err := h.Storage.File(r.Context(), user, path.Join(dir, filename))
 		if err != nil {
 			logrus.Error(err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)

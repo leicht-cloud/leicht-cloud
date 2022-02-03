@@ -28,6 +28,19 @@
 
     <div id="liveAlertPlaceholder"></div>
 
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item active"><a href="/?dir=/">Home</a></li>
+        {{ $fulldir := "" }}
+        {{ range $folder := .Dir }}
+          {{ if ne $folder "" }}
+            {{ $fulldir = printf "%s/%s" $fulldir $folder }}
+            <li class="breadcrumb-item active"><a href="/?dir={{ $fulldir }}">{{ $folder }}</a></li>
+          {{ end }}
+        {{ end }}
+      </ol>
+    </nav>
+
     <div class="table">
       <table class="table table-striped" style="width:100%" id="directory">
         <thead>
