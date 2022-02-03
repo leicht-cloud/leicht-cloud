@@ -20,12 +20,15 @@ func ParsedToMetric(labels map[string]string, raw *io_prometheus_client.MetricFa
 		return parseGauge(labels, raw)
 	case io_prometheus_client.MetricType_SUMMARY:
 		return parseSummary(labels, raw)
+	case io_prometheus_client.MetricType_UNTYPED:
+		return parseUntyped(labels, raw)
+	case io_prometheus_client.MetricType_HISTOGRAM:
+		return parseHistogram(labels, raw)
 	default:
 		logrus.Debugf("Unknown type: %+v", raw)
 	}
 
-	// TODO: Implement the missing types..
-	return nil, errors.New("Skip, lol")
+	panic("This shouldn't be reachable..")
 }
 
 func parseLabelDefinitions(labels map[string]string, raw *io_prometheus_client.Metric) []string {
@@ -69,28 +72,30 @@ func parseLabelValues(order []string, labels map[string]string, raw *io_promethe
 
 func parseCounter(extraLabels map[string]string, raw *io_prometheus_client.MetricFamily) (prometheus.Metric, error) {
 	labels := parseLabelDefinitions(extraLabels, raw.Metric[0])
-	return prometheus.MustNewConstMetric(
-		prometheus.NewDesc(*raw.Name,
-			*raw.Help,
+	return prometheus.NewConstMetric(
+		prometheus.NewDesc(
+			raw.GetName(),
+			raw.GetHelp(),
 			labels,
 			nil),
 		prometheus.CounterValue,
 		raw.Metric[0].Counter.GetValue(),
 		parseLabelValues(labels, extraLabels, raw.Metric[0])...,
-	), nil
+	)
 }
 
 func parseGauge(extraLabels map[string]string, raw *io_prometheus_client.MetricFamily) (prometheus.Metric, error) {
 	labels := parseLabelDefinitions(extraLabels, raw.Metric[0])
-	return prometheus.MustNewConstMetric(
-		prometheus.NewDesc(*raw.Name,
-			*raw.Help,
+	return prometheus.NewConstMetric(
+		prometheus.NewDesc(
+			raw.GetName(),
+			raw.GetHelp(),
 			labels,
 			nil),
 		prometheus.GaugeValue,
 		raw.Metric[0].Gauge.GetValue(),
 		parseLabelValues(labels, extraLabels, raw.Metric[0])...,
-	), nil
+	)
 }
 
 func parseQuantiles(summary *io_prometheus_client.Summary) (map[float64]float64, error) {
@@ -109,14 +114,62 @@ func parseSummary(extraLabels map[string]string, raw *io_prometheus_client.Metri
 	if err != nil {
 		return nil, err
 	}
-	return prometheus.MustNewConstSummary(
-		prometheus.NewDesc(*raw.Name,
-			*raw.Help,
+
+	return prometheus.NewConstSummary(
+		prometheus.NewDesc(
+			raw.GetName(),
+			raw.GetHelp(),
 			labels,
 			nil),
 		raw.Metric[0].Summary.GetSampleCount(),
 		raw.Metric[0].Summary.GetSampleSum(),
 		quantiles,
 		parseLabelValues(labels, extraLabels, raw.Metric[0])...,
-	), nil
+	)
+}
+
+func parseUntyped(extraLabels map[string]string, raw *io_prometheus_client.MetricFamily) (prometheus.Metric, error) {
+	labels := parseLabelDefinitions(extraLabels, raw.Metric[0])
+	return prometheus.NewConstMetric(
+		prometheus.NewDesc(
+			raw.GetName(),
+			raw.GetHelp(),
+			labels,
+			nil,
+		),
+		prometheus.UntypedValue,
+		raw.Metric[0].Untyped.GetValue(),
+		parseLabelValues(labels, extraLabels, raw.Metric[0])...,
+	)
+}
+
+func parseBuckets(histogram *io_prometheus_client.Histogram) (map[float64]uint64, error) {
+	out := make(map[float64]uint64)
+
+	for _, value := range histogram.Bucket {
+		out[value.GetUpperBound()] = value.GetCumulativeCount()
+	}
+
+	return out, nil
+}
+
+func parseHistogram(extraLabels map[string]string, raw *io_prometheus_client.MetricFamily) (prometheus.Metric, error) {
+	labels := parseLabelDefinitions(extraLabels, raw.Metric[0])
+	buckets, err := parseBuckets(raw.Metric[0].Histogram)
+	if err != nil {
+		return nil, err
+	}
+
+	return prometheus.NewConstHistogram(
+		prometheus.NewDesc(
+			raw.GetName(),
+			raw.GetHelp(),
+			labels,
+			nil,
+		),
+		raw.Metric[0].Histogram.GetSampleCount(),
+		raw.Metric[0].Histogram.GetSampleSum(),
+		buckets,
+		parseLabelValues(labels, extraLabels, raw.Metric[0])...,
+	)
 }
