@@ -203,9 +203,11 @@ func (m *Manager) Start(name string) (PluginInterface, error) {
 		return nil, err
 	}
 
-	err = prometheus.Register(plugin)
-	if err != nil {
-		return nil, err
+	if manifest.Prometheus {
+		err = prometheus.Register(plugin)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	m.plugins[name] = plugin

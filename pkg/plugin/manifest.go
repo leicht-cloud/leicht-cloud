@@ -21,6 +21,7 @@ type Manifest struct {
 	Name        string      `yaml:"name"`
 	Type        string      `yaml:"type"`
 	Permissions Permissions `yaml:"permissions"`
+	Prometheus  bool        `yaml:"prometheus"`
 }
 
 type Permissions struct {
