@@ -41,11 +41,19 @@ func (h *rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		dir = "/"
 	}
 
+	dirSplit := []string{}
+
+	for _, str := range strings.Split(dir, "/") {
+		if str != "" {
+			dirSplit = append(dirSplit, str)
+		}
+	}
+
 	ctx := template.AttachTemplateData(r.Context(), folderTemplateData{
 		Navbar: template.NavbarData{
 			Admin: user.Admin,
 		},
-		Dir: strings.Split(dir, "/"),
+		Dir: dirSplit,
 	})
 
 	h.StaticHandler.ServeHTTP(w, r.WithContext(ctx))
