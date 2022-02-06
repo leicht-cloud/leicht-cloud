@@ -70,9 +70,38 @@ $(document).ready(function () {
         dir += "/";
     }
 
+    //var confirmFileDeletionModal = new bootstrap.Modal(document.getElementById("confirmFileDeletionModal"));
+    var confirmFileDeletionModal = document.getElementById("confirmFileDeletionModal");
+    function confirmDeletion(data) {
+        var body = confirmFileDeletionModal.getElementsByClassName('modal-body')[0];
+        body.innerHTML = "Are you sure you want to delete the following files?</br><ul>";
+
+        data.each(function(file) {
+            body.innerHTML += '<li><input type="hidden" name="file" value="' + dir + file[0][0] + '">' + file[0][0] + '</li>';
+        });
+
+        body.innerHTML += "</ul>";
+
+        bootstrap.Modal.getOrCreateInstance(confirmFileDeletionModal).show();
+    };
+
+
     var datatable = $('#directory').DataTable({
-        "columnDefs": [{
-                "render": function (data, type, row) {
+        select: true,
+        dom: "<'row'<'col-sm-12 col-md-6'B><'col-sm-12 col-md-6'f>>" +
+            "<'row'<'col-sm-12'tr>>" +
+            "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+        buttons: [
+            {
+                text: 'Delete files',
+                action: function ( e, dt, node, config ) {
+                    confirmDeletion(dt.rows({selected: true}).data());
+                },
+                enabled: false,
+            },
+        ],
+        columnDefs: [{
+                render: function (data, type, row) {
                     if (data[1]) {
                         // https://icons.getbootstrap.com/icons/folder/
                         return '<a href="/?dir=' + dir + data[0] + '">'
@@ -83,21 +112,28 @@ $(document).ready(function () {
                         + '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-file-earmark" viewBox="0 0 16 16"><path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/></svg> '
                         + data[0] + '</a>';
                 },
-                "targets": 0 // name
+                targets: 0 // name
             },
             {
-                "render": function (data, type, row) {
+                render: function (data, type, row) {
                     return new Date(Date.parse(data)).toLocaleString();
                 },
-                "targets": 1 // created_at
+                targets: 1 // created_at
             },
             {
-                "render": function (data, type, row) {
+                render: function (data, type, row) {
                     return humanFileSize(data);
                 },
-                "targets": 2 // size
+                targets: 2 // size
             }
         ]
+    });
+
+    datatable.on('select deselect', function () {
+        // enable/disable the actions button as needed
+        var selectedRows = datatable.rows({ selected: true }).count();
+ 
+        datatable.button(0).enable(selectedRows > 0);
     });
 
     $.get("/api/list?dir=" + dir)

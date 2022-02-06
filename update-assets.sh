@@ -10,14 +10,24 @@
 mkdir -p assets/js/lib assets/css
 
 JQUERY_URL="https://code.jquery.com/jquery-3.6.0.min.js"
-DATATABLES_URL="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.min.js"
-DATATABLES_BOOTSTRAP_JS_URL="https://cdn.datatables.net/1.11.3/js/dataTables.bootstrap5.min.js"
-DATATABLES_BOOTSTRAP_CSS_URL="https://cdn.datatables.net/1.11.3/css/dataTables.bootstrap5.min.css"
+DATATABLES_URL="https://cdn.datatables.net/1.11.4/js/jquery.dataTables.min.js"
+DATATABLES_BOOTSTRAP_JS_URL="https://cdn.datatables.net/1.11.4/js/dataTables.bootstrap5.min.js"
+DATATABLES_BOOTSTRAP_CSS_URL="https://cdn.datatables.net/1.11.4/css/dataTables.bootstrap5.min.css"
+DATATABLES_SELECT_CSS_URL="https://cdn.datatables.net/select/1.3.4/css/select.dataTables.min.css"
+DATATABLES_SELECT_JS_URL="https://cdn.datatables.net/select/1.3.4/js/dataTables.select.min.js"
+DATATABLES_BUTTONS_JS_URL="https://cdn.datatables.net/buttons/2.2.2/js/dataTables.buttons.min.js"
+DATATABLES_BUTTONS_BOOTSTRAP_JS_URL="https://cdn.datatables.net/buttons/2.2.2/js/buttons.bootstrap5.min.js"
+DATATABLES_BUTTONS_CSS_URL="https://cdn.datatables.net/buttons/2.2.2/css/buttons.bootstrap5.min.css"
 
 wget -O assets/js/lib/jquery.min.js $JQUERY_URL
 wget -O assets/js/lib/jquery.dataTables.min.js $DATATABLES_URL
 wget -O assets/js/lib/dataTables.bootstrap5.min.js $DATATABLES_BOOTSTRAP_JS_URL
 wget -O assets/css/dataTables.bootstrap5.min.css $DATATABLES_BOOTSTRAP_CSS_URL
+wget -O assets/js/lib/dataTables.select.min.js $DATATABLES_SELECT_JS_URL
+wget -O assets/css/select.dataTables.min.css $DATATABLES_SELECT_CSS_URL
+wget -O assets/js/lib/dataTables.buttons.min.js $DATATABLES_BUTTONS_JS_URL
+wget -O assets/js/lib/buttons.bootstrap5.min.js $DATATABLES_BUTTONS_BOOTSTRAP_JS_URL
+wget -O assets/css/buttons.bootstrap5.min.css $DATATABLES_BUTTONS_CSS_URL
 
 BOOTSTRAP_CSS_URL="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
 BOOTSTRAP_JS_URL="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"

@@ -3,10 +3,15 @@
 <head>
   <link href="/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
   <link href="/css/dataTables.bootstrap5.min.css" rel="stylesheet" crossorigin="anonymous">
+  <link href="/css/select.dataTables.min.css" rel="stylesheet" crossorigin="anonymous">
+  <link href="/css/buttons.bootstrap5.min.css" rel="stylesheet" crossorigin="anonymous">
   <script src="/js/lib/jquery.min.js"></script>
   <script src="/js/lib/jquery.dataTables.min.js"></script>
   <script src="/js/lib/bootstrap.bundle.min.js"></script>
   <script src="/js/lib/dataTables.bootstrap5.min.js"></script>
+  <script src="/js/lib/dataTables.select.min.js"></script>
+  <script src="/js/lib/dataTables.buttons.min.js"></script>
+  <script src="/js/lib/buttons.bootstrap5.min.js"></script>
   <script src="/js/lib/tus.min.js"></script>
 
   {{ navbar .Navbar }}
@@ -61,6 +66,27 @@
             </form>
           </div>
         </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="confirmFileDeletionModal" tabIndex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-scrollable">
+        <form action="/api/delete" method="POST">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Confirm file deletion</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+            </div>
+
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn btn-primary">Confirm</button>
+            </div>
+          </div>
+        </form>
       </div>
     </div>
 

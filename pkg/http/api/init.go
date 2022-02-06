@@ -14,4 +14,5 @@ func Init(mux *http.ServeMux, db *gorm.DB, storage storage.StorageProvider, file
 	mux.Handle("/api/list", newListHandler(storage))
 	mux.Handle("/api/fileinfo", newFileInfoHandler(storage, fileinfo))
 	mux.Handle("/api/mkdir", newMkdirHandler(storage))
+	mux.Handle("/api/delete", newDeleteHandler(storage))
 }
