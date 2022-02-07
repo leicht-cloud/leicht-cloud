@@ -8,6 +8,7 @@ import (
 	"github.com/leicht-cloud/leicht-cloud/pkg/auth"
 	"github.com/leicht-cloud/leicht-cloud/pkg/models"
 	"github.com/leicht-cloud/leicht-cloud/pkg/storage"
+	"go.uber.org/multierr"
 )
 
 type deleteHandler struct {
@@ -45,11 +46,15 @@ func (h *deleteHandler) Serve(user *models.User, w http.ResponseWriter, r *http.
 			}
 		}
 
-		err = h.Storage.Delete(r.Context(), user, file)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+		delErr := h.Storage.Delete(r.Context(), user, file)
+		if delErr != nil {
+			err = multierr.Append(err, delErr)
 		}
+	}
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	http.Redirect(w, r, fmt.Sprintf("/?dir=%s", dir), http.StatusTemporaryRedirect)
