@@ -28,7 +28,7 @@ func main() {
 	flag.Parse()
 
 	if len(flag.Args()) != 1 {
-		logrus.Fatalf("Requires 1 argument, got %d", len(os.Args))
+		logrus.Fatalf("Requires 1 argument, got %d", len(flag.Args()))
 	}
 	path := flag.Arg(0)
 
@@ -37,7 +37,7 @@ func main() {
 		logrus.Fatal(err)
 	}
 
-	fout, err := os.OpenFile(filepath.Join(*outdir, fmt.Sprintf("%s.plugin", manifest.Name)), os.O_CREATE|os.O_WRONLY, 0400)
+	fout, err := os.OpenFile(filepath.Join(*outdir, fmt.Sprintf("%s.plugin", manifest.Name)), os.O_CREATE|os.O_WRONLY, 0600)
 	if err != nil {
 		logrus.Fatal(err)
 	}
