@@ -1,4 +1,4 @@
-package api
+package webapi
 
 import (
 	"bytes"
@@ -41,7 +41,7 @@ func TestMultipart(t *testing.T) {
 
 	writer.Close()
 
-	req, err := http.NewRequest(http.MethodPost, "/api/upload", body)
+	req, err := http.NewRequest(http.MethodPost, "/webapi/upload", body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -86,7 +86,7 @@ func TestMultipartInvalidFilename(t *testing.T) {
 
 	writer.Close()
 
-	req, err := http.NewRequest(http.MethodPost, "/api/upload", body)
+	req, err := http.NewRequest(http.MethodPost, "/webapi/upload", body)
 	if err != nil {
 		t.Fatal(err)
 	}

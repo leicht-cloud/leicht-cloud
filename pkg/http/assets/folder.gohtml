@@ -30,7 +30,7 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
-            <form enctype="multipart/form-data" action="/api/upload" method="POST">
+            <form enctype="multipart/form-data" action="/webapi/upload" method="POST">
               <div class="file-upload-wrapper input-group">
                 <input type="file" id="input-file-now-custom-2" name="file" class="file-upload form-control" multiple/>
                 <button class="btn btn-primary" id="uploadButton">Upload</button>
@@ -49,7 +49,7 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
-            <form action="/api/mkdir" method="POST">
+            <form action="/webapi/mkdir" method="POST">
 
               {{ $fullpath := "" }}
               {{ range $folder := .Dir }}
@@ -71,7 +71,7 @@
 
     <div class="modal fade" id="confirmFileDeletionModal" tabIndex="-1" aria-hidden="true">
       <div class="modal-dialog modal-dialog-scrollable">
-        <form action="/api/delete" method="POST">
+        <form action="/webapi/delete" method="POST">
           <div class="modal-content">
             <div class="modal-header">
               <h5 class="modal-title">Confirm file deletion</h5>

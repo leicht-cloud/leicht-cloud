@@ -1,4 +1,4 @@
-package api
+package webapi
 
 import (
 	"bytes"
@@ -33,7 +33,7 @@ func TestDownload(t *testing.T) {
 
 	memfs.Data["/test.data"] = raw
 
-	req, err := http.NewRequest(http.MethodGet, "/api/download?filename=test.data", nil)
+	req, err := http.NewRequest(http.MethodGet, "/webapi/download?filename=test.data", nil)
 	if err != nil {
 		t.Fatal(err)
 	}

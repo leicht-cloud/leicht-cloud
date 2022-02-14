@@ -1,4 +1,4 @@
-package api
+package webapi
 
 import (
 	"encoding/base64"
@@ -120,7 +120,7 @@ func (h *uploadHandler) Serve(user *models.User, w http.ResponseWriter, r *http.
 		h.uploads[id] = state
 		h.mutex.Unlock()
 
-		http.Redirect(w, r, fmt.Sprintf("/api/upload?resume=%d", id), http.StatusCreated)
+		http.Redirect(w, r, fmt.Sprintf("/webapi/upload?resume=%d", id), http.StatusCreated)
 		return
 	}
 

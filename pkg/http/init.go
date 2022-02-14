@@ -6,8 +6,8 @@ import (
 	"github.com/leicht-cloud/leicht-cloud/pkg/auth"
 	"github.com/leicht-cloud/leicht-cloud/pkg/fileinfo"
 	"github.com/leicht-cloud/leicht-cloud/pkg/http/admin"
-	"github.com/leicht-cloud/leicht-cloud/pkg/http/api"
 	"github.com/leicht-cloud/leicht-cloud/pkg/http/template"
+	"github.com/leicht-cloud/leicht-cloud/pkg/http/webapi"
 	"github.com/leicht-cloud/leicht-cloud/pkg/plugin"
 	"github.com/leicht-cloud/leicht-cloud/pkg/storage"
 	"gorm.io/gorm"
@@ -33,7 +33,7 @@ func InitHttpServer(
 	mux.Handle("/", &rootHandler{DB: db, StaticHandler: templateHandler})
 	mux.Handle("/login", &loginHandler{DB: db, Auth: authProvider, StaticHandler: templateHandler})
 	mux.Handle("/signup", &signupHandler{Assets: assets, DB: db, Storage: storage})
-	api.Init(mux, db, storage, fileinfo)
+	webapi.Init(mux, db, storage, fileinfo)
 	admin.Init(mux, authProvider, templateHandler, pluginManager, db)
 
 	out := &http.Server{

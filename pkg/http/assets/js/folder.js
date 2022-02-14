@@ -21,9 +21,9 @@ function fileInfo(file) {
     body.empty();
 
     var download = $('#offcanvasDownloadLink');
-    download.attr('href', document.location.protocol + '//' + document.location.host + '/api/download?filename=' +
+    download.attr('href', document.location.protocol + '//' + document.location.host + '/webapi/download?filename=' +
         file);
-    download.attr('download', document.location.protocol + '//' + document.location.host + '/api/download?filename=' +
+    download.attr('download', document.location.protocol + '//' + document.location.host + '/webapi/download?filename=' +
         file);
 
     var offcanvas = new bootstrap.Offcanvas($('#offcanvasRight'));
@@ -49,7 +49,7 @@ function fileInfo(file) {
         body.append(element);
     };
 
-    var socket = new WebSocket("ws://" + document.location.host + "/api/fileinfo?filename=" + file);
+    var socket = new WebSocket("ws://" + document.location.host + "/webapi/fileinfo?filename=" + file);
     socket.onmessage = function (event) {
         var json = JSON.parse(event.data);
         if (json.title != "") {
@@ -136,7 +136,7 @@ $(document).ready(function () {
         datatable.button(0).enable(selectedRows > 0);
     });
 
-    $.get("/api/list?dir=" + dir)
+    $.get("/webapi/list?dir=" + dir)
         .fail(function (xhr, status, error) {
             alert(xhr.responseText, 'danger');
         })
@@ -211,7 +211,7 @@ $(document).ready(function () {
         toggleBtn.textContent = 'pause upload'
 
         var options = {
-            endpoint: "/api/upload?dir=" + dir,
+            endpoint: "/webapi/upload?dir=" + dir,
             chunkSize: 1024 * 1024 * 32,
             retryDelays: [0, 1000, 3000, 5000],
             parallelUploads: 1,

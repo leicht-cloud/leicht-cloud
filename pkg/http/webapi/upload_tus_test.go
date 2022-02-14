@@ -1,4 +1,4 @@
-package api
+package webapi
 
 import (
 	"bytes"
@@ -67,7 +67,7 @@ func TestTusUploadFullCycle(t *testing.T) {
 	assert.NoError(t, err, err)
 	raw := data.Bytes()
 
-	createReq, err := http.NewRequest(http.MethodPost, "/api/upload", nil)
+	createReq, err := http.NewRequest(http.MethodPost, "/webapi/upload", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -143,7 +143,7 @@ func TestTusOptions(t *testing.T) {
 		ID: 1337,
 	}
 
-	req, err := http.NewRequest(http.MethodOptions, "/api/upload", nil)
+	req, err := http.NewRequest(http.MethodOptions, "/webapi/upload", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -162,7 +162,7 @@ func TestTusInvalidLength(t *testing.T) {
 		ID: 1337,
 	}
 
-	req, err := http.NewRequest(http.MethodPost, "/api/upload", nil)
+	req, err := http.NewRequest(http.MethodPost, "/webapi/upload", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -185,7 +185,7 @@ func TestTusInvalidFilename(t *testing.T) {
 		ID: 1337,
 	}
 
-	req, err := http.NewRequest(http.MethodPost, "/api/upload", nil)
+	req, err := http.NewRequest(http.MethodPost, "/webapi/upload", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -208,7 +208,7 @@ func TestTusResumeInvalidID(t *testing.T) {
 		ID: 1337,
 	}
 
-	req, err := http.NewRequest(http.MethodPatch, "/api/upload?resume=ThisIsInvalid", nil)
+	req, err := http.NewRequest(http.MethodPatch, "/webapi/upload?resume=ThisIsInvalid", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -227,7 +227,7 @@ func TestTusResumeNotExistingID(t *testing.T) {
 		ID: 1337,
 	}
 
-	req, err := http.NewRequest(http.MethodPatch, "/api/upload?resume=9001", nil)
+	req, err := http.NewRequest(http.MethodPatch, "/webapi/upload?resume=9001", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
