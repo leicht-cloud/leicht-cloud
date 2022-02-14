@@ -61,42 +61,98 @@ function fileInfo(file) {
 };
 
 $(document).ready(function () {
+    var params = new URLSearchParams(window.location.search);
+    var dir = "/";
+    if (params.has("dir")) {
+        dir = params.get("dir");
+    }
+    if (dir.slice(-1) != "/") {
+        dir += "/";
+    }
+
+    //var confirmFileDeletionModal = new bootstrap.Modal(document.getElementById("confirmFileDeletionModal"));
+    var confirmFileDeletionModal = document.getElementById("confirmFileDeletionModal");
+    function confirmDeletion(data) {
+        var body = confirmFileDeletionModal.getElementsByClassName('modal-body')[0];
+        body.innerHTML = "Are you sure you want to delete the following files?</br><ul>";
+
+        data.each(function(file) {
+            body.innerHTML += '<li><input type="hidden" name="file" value="' + dir + file[0][0] + '">' + file[0][0] + '</li>';
+        });
+
+        body.innerHTML += "</ul>";
+
+        bootstrap.Modal.getOrCreateInstance(confirmFileDeletionModal).show();
+    };
+
+
     var datatable = $('#directory').DataTable({
-        "columnDefs": [{
-                "render": function (data, type, row) {
-                    console.log(data);
-                    return '<a href="#" onclick="fileInfo(\'' + data + '\');">' + data + '</a>';
+        select: true,
+        dom: "<'row'<'col-sm-12 col-md-6'B><'col-sm-12 col-md-6'f>>" +
+            "<'row'<'col-sm-12'tr>>" +
+            "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+        buttons: [
+            {
+                text: 'Delete files',
+                action: function ( e, dt, node, config ) {
+                    confirmDeletion(dt.rows({selected: true}).data());
                 },
-                "targets": 0 // name
+                enabled: false,
+            },
+        ],
+        columnDefs: [{
+                render: function (data, type, row) {
+                    if (data[1]) {
+                        // https://icons.getbootstrap.com/icons/folder/
+                        return '<a href="/?dir=' + dir + data[0] + '">'
+                        + '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-folder" viewBox="0 0 16 16"><path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19zm4.69-1.707A1 1 0 0 0 6.172 2H2.5a1 1 0 0 0-1 .981l.006.139C1.72 3.042 1.95 3 2.19 3h5.396l-.707-.707z"/></svg> '
+                        + data[0] + '</a>';
+                    }
+                    return '<a href="#" onclick="fileInfo(\'' + data[0] + '\');">'
+                        + '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-file-earmark" viewBox="0 0 16 16"><path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/></svg> '
+                        + data[0] + '</a>';
+                },
+                targets: 0 // name
             },
             {
-                "render": function (data, type, row) {
+                render: function (data, type, row) {
                     return new Date(Date.parse(data)).toLocaleString();
                 },
-                "targets": 1 // created_at
+                targets: 1 // created_at
             },
             {
-                "render": function (data, type, row) {
+                render: function (data, type, row) {
                     return humanFileSize(data);
                 },
-                "targets": 2 // size
+                targets: 2 // size
             }
         ]
     });
 
-    $.get("/api/list")
+    datatable.on('select deselect', function () {
+        // enable/disable the actions button as needed
+        var selectedRows = datatable.rows({ selected: true }).count();
+ 
+        datatable.button(0).enable(selectedRows > 0);
+    });
+
+    $.get("/api/list?dir=" + dir)
         .fail(function (xhr, status, error) {
             alert(xhr.responseText, 'danger');
         })
         .done(function (data) {
             data = data.split('\n');
             data.forEach(function (data) {
-                json = JSON.parse(data);
-                datatable.row.add([
-                    json.name,
-                    json.created_at,
-                    json.size
-                ]).draw(false);
+                try {
+                    json = JSON.parse(data);
+                    datatable.row.add([
+                        [json.name, json.directory],
+                        json.created_at,
+                        json.size
+                    ]).draw(false);
+                } catch (e) {
+                    console.log(e);
+                }
             });
 
             datatable.draw();
@@ -155,7 +211,7 @@ $(document).ready(function () {
         toggleBtn.textContent = 'pause upload'
 
         var options = {
-            endpoint: "/api/upload",
+            endpoint: "/api/upload?dir=" + dir,
             chunkSize: 1024 * 1024 * 32,
             retryDelays: [0, 1000, 3000, 5000],
             parallelUploads: 1,

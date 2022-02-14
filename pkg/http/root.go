@@ -2,6 +2,7 @@ package http
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/leicht-cloud/leicht-cloud/pkg/auth"
 	"github.com/leicht-cloud/leicht-cloud/pkg/http/template"
@@ -15,6 +16,7 @@ type rootHandler struct {
 
 type folderTemplateData struct {
 	Navbar template.NavbarData
+	Dir    []string
 }
 
 func (h *rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -34,10 +36,24 @@ func (h *rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// internal rewrite to the root folder
 	r.URL.Path = "/folder.gohtml"
 
+	dir := r.URL.Query().Get("dir")
+	if dir == "" {
+		dir = "/"
+	}
+
+	dirSplit := []string{}
+
+	for _, str := range strings.Split(dir, "/") {
+		if str != "" {
+			dirSplit = append(dirSplit, str)
+		}
+	}
+
 	ctx := template.AttachTemplateData(r.Context(), folderTemplateData{
 		Navbar: template.NavbarData{
 			Admin: user.Admin,
 		},
+		Dir: dirSplit,
 	})
 
 	h.StaticHandler.ServeHTTP(w, r.WithContext(ctx))

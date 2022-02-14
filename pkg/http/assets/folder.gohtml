@@ -3,10 +3,15 @@
 <head>
   <link href="/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
   <link href="/css/dataTables.bootstrap5.min.css" rel="stylesheet" crossorigin="anonymous">
+  <link href="/css/select.dataTables.min.css" rel="stylesheet" crossorigin="anonymous">
+  <link href="/css/buttons.bootstrap5.min.css" rel="stylesheet" crossorigin="anonymous">
   <script src="/js/lib/jquery.min.js"></script>
   <script src="/js/lib/jquery.dataTables.min.js"></script>
   <script src="/js/lib/bootstrap.bundle.min.js"></script>
   <script src="/js/lib/dataTables.bootstrap5.min.js"></script>
+  <script src="/js/lib/dataTables.select.min.js"></script>
+  <script src="/js/lib/dataTables.buttons.min.js"></script>
+  <script src="/js/lib/buttons.bootstrap5.min.js"></script>
   <script src="/js/lib/tus.min.js"></script>
 
   {{ navbar .Navbar }}
@@ -16,17 +21,119 @@
 
 <body class="text-center">
   <div class="container">
-    <form enctype="multipart/form-data" action="/api/upload" method="POST">
-      <div class="file-upload-wrapper input-group">
-        <input type="file" id="input-file-now-custom-2" name="file" class="file-upload form-control-sm" multiple/>
-        <button class="btn btn-primary" id="uploadButton">Upload</button>
+
+    <div class="modal fade" id="uploadFileModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Upload File</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form enctype="multipart/form-data" action="/api/upload" method="POST">
+              <div class="file-upload-wrapper input-group">
+                <input type="file" id="input-file-now-custom-2" name="file" class="file-upload form-control" multiple/>
+                <button class="btn btn-primary" id="uploadButton">Upload</button>
+              </div>
+            </form>
+          </div>
+        </div>
       </div>
-      <div class="progress" style="visibility:hidden">
-        <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%;"></div>
+    </div>
+
+    <div class="modal fade" id="newFolderModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">New Folder</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form action="/api/mkdir" method="POST">
+
+              {{ $fullpath := "" }}
+              {{ range $folder := .Dir }}
+                {{ if ne $folder "" }}
+                  {{ $fullpath = printf "%s/%s" $fullpath $folder }}
+                {{ end }}
+              {{ end }}
+              <input type="hidden" name="path" value="{{ $fullpath }}"/>
+
+              <div class="input-group">
+                <input type="text" placeholder="New Folder Name" name="foldername" class="form-control"/>
+                <button class="btn btn-primary" type="submit">Create</button>
+              </div>
+            </form>
+          </div>
+        </div>
       </div>
-    </form>
+    </div>
+
+    <div class="modal fade" id="confirmFileDeletionModal" tabIndex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-scrollable">
+        <form action="/api/delete" method="POST">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Confirm file deletion</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+            </div>
+
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn btn-primary">Confirm</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
 
     <div id="liveAlertPlaceholder"></div>
+
+    <div class="progress" style="visibility:hidden">
+      <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%;"></div>
+    </div>
+
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+
+        {{ $size := len .Dir }}
+        {{ if eq $size 0 }}
+          <li class="breadcrumb-item active">Home</li>
+        {{ else }}
+          <li class="breadcrumb-item"><a href="/?dir=/">Home</a></li>
+
+          {{ $active := index .Dir (add $size -1) }}
+          {{ $fullpath := "" }}
+          {{ range $index, $folder := .Dir }}
+            {{ $fullpath = printf "%s/%s" $fullpath $folder }}
+            {{ if eq $folder $active }}
+              <li class="breadcrumb-item active">{{ $folder }}</a></li>
+            {{ else }}
+              <li class="breadcrumb-item"><a href="/?dir={{ $fullpath }}">{{ $folder }}</a></li>
+            {{ end }}
+          {{ end }}
+
+        {{ end }}
+
+        <li class="breadcrumb-item dropdown">
+            <a class="dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+              Add
+            </a>
+            <ul class="dropdown-menu">
+              <li>
+                <a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#uploadFileModal">Upload File</a>
+              </li>
+
+              <li>
+                <a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#newFolderModal">New Folder</a>
+              </li>
+            </ul>
+        </li>
+      </ol>
+    </nav>
 
     <div class="table">
       <table class="table table-striped" style="width:100%" id="directory">
