@@ -1,14 +1,19 @@
 package utils
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"io"
+	"os"
 	"strings"
 
 	"github.com/leicht-cloud/leicht-cloud/pkg/plugin"
 	"github.com/leicht-cloud/leicht-cloud/pkg/storage"
 	"github.com/leicht-cloud/leicht-cloud/pkg/storage/builtin/local"
 	storagePlugin "github.com/leicht-cloud/leicht-cloud/pkg/storage/plugin"
+	"github.com/sirupsen/logrus"
+	"go.uber.org/multierr"
 )
 
 type Config struct {
@@ -44,7 +49,21 @@ func fromConfig(cfg *Config, pManager *plugin.Manager) (storage.StorageProvider,
 			return nil, err
 		}
 
-		return storagePlugin.NewGrpcStorage(conn, cfg.Extra)
+		store, err := storagePlugin.NewGrpcStorage(conn, cfg.Extra)
+		if err != nil {
+			stdout := plugin.Stdout()
+			if stdout != nil && len(stdout) > 0 {
+				logrus.Debugf("-----STDOUT FOR PLUGIN: %s-----", name)
+				_, _ = io.Copy(os.Stdout, bytes.NewReader(stdout))
+				logrus.Debugf("-----END OF STDOUT FOR PLUGIN: %s-----", name)
+			}
+
+			closeErr := plugin.Close()
+
+			return nil, multierr.Combine(err, closeErr)
+		}
+
+		return store, nil
 	}
 
 	return nil, fmt.Errorf("No storage provider found with the name: %s", cfg.Provider)

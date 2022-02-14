@@ -16,6 +16,8 @@ import (
 
 type PluginInterface interface {
 	GrpcConn() (*grpc.ClientConn, error)
+	Stdout() []byte
+	Close() error
 }
 
 type plugin struct {
@@ -71,6 +73,10 @@ func (p *plugin) Start() error {
 
 func (p *plugin) Close() error {
 	return p.runner.Close()
+}
+
+func (p *plugin) Stdout() []byte {
+	return p.stdout.Bytes()
 }
 
 func (p *plugin) Describe(chan<- *prometheus.Desc) {

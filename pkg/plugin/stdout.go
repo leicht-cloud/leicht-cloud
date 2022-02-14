@@ -20,6 +20,13 @@ func newStdout() *Stdout {
 	}
 }
 
+func (s *Stdout) Bytes() []byte {
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+
+	return s.buffer.Bytes()
+}
+
 type StdoutChannel struct {
 	ch chan []byte
 

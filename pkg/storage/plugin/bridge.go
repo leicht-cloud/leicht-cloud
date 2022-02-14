@@ -12,7 +12,6 @@ import (
 
 	"github.com/leicht-cloud/leicht-cloud/pkg/models"
 	"github.com/leicht-cloud/leicht-cloud/pkg/storage"
-	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )
 
@@ -197,7 +196,7 @@ func (s *BridgeStorageProviderServer) WriteFile(ctx context.Context, req *WriteF
 }
 
 // TODO: We'll probably want to increase this, perhaps even have it more dynamic or configurable per plugin?
-const READ_BUFFER_SIZE = 1024 * 4
+const READ_BUFFER_SIZE = 1024 * 32
 
 func (s *BridgeStorageProviderServer) ReadFile(req *ReadFileQuery, srv StorageProvider_ReadFileServer) error {
 	file, err := s.getFile(req.GetId())
@@ -209,7 +208,6 @@ func (s *BridgeStorageProviderServer) ReadFile(req *ReadFileQuery, srv StoragePr
 
 	for {
 		n, err := file.Read(buffer)
-		logrus.Debugf("err: %s, n: %d", err, n)
 		if err != nil {
 			if err == io.EOF {
 				// empty message indicate end of file
