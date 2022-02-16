@@ -63,7 +63,6 @@ func (s *BridgeFileinfoProviderServer) Check(srv FileInfoProvider_CheckServer) e
 				return
 			}
 			if msg.GetEOF() {
-				rp.Close()
 				wp.Close()
 				return
 			}
