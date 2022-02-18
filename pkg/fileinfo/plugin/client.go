@@ -11,6 +11,8 @@ import (
 	"sync"
 
 	"github.com/leicht-cloud/leicht-cloud/pkg/fileinfo/types"
+	"github.com/leicht-cloud/leicht-cloud/pkg/system"
+	"github.com/sirupsen/logrus"
 	grpc "google.golang.org/grpc"
 )
 
@@ -89,9 +91,6 @@ func (s *GrpcFileinfo) MinimumBytes(typ, subtyp string) (int64, error) {
 	return resp.GetLength(), nil
 }
 
-// TODO: We'll probably want to increase this, perhaps even have it more dynamic or configurable per plugin?
-const READ_BUFFER_SIZE = 1024 * 4
-
 func (s *GrpcFileinfo) Check(filename string, reader io.Reader) ([]byte, error) {
 	client, err := s.Client.Check(context.Background())
 	if err != nil {
@@ -103,7 +102,8 @@ func (s *GrpcFileinfo) Check(filename string, reader io.Reader) ([]byte, error) 
 	respCh := make(chan *CheckResponse, 1)
 
 	go func(errCh chan<- error) {
-		buf := make([]byte, READ_BUFFER_SIZE)
+		buf := make([]byte, system.GetBufferSize())
+		logrus.Debugf("buffer size: %d", len(buf))
 		for {
 			n, err := reader.Read(buf)
 			if err != nil {
