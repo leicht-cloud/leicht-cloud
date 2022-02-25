@@ -55,7 +55,7 @@ func pluginNamespace() {
 	// to bind mount it if it's an actual file and only copy if it's a symlink or something alike I suppose.
 	if network == "userspace" || network == "host" {
 		if err := copyFile(wd, "/etc/resolv.conf"); err != nil {
-			logrus.Panic("Error while setting up /etc/resolv.conf: %s", err)
+			logrus.Panicf("Error while setting up /etc/resolv.conf: %s", err)
 		}
 	}
 
