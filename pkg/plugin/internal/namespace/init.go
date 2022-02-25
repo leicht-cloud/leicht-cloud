@@ -11,6 +11,13 @@ import (
 	"github.com/vishvananda/netlink"
 )
 
+var devices = []string{
+	"/dev/null",
+	"/dev/zero",
+	"/dev/random",
+	"/dev/urandom",
+}
+
 func init() {
 	reexec.Register("pluginNamespace", pluginNamespace)
 	if reexec.Init() {
@@ -21,23 +28,29 @@ func init() {
 func pluginNamespace() {
 	wd, err := os.Getwd()
 	if err != nil {
-		panic(err)
+		logrus.Panicf("Error during Getwd() call: %s", err)
 	}
 
 	network := os.Getenv("NETWORK")
 
 	if err := mountProc(wd); err != nil {
-		panic(err)
+		logrus.Panicf("Error in mountProc(): %s", err)
+	}
+
+	for _, device := range devices {
+		if err := bindMount(wd, device); err != nil {
+			logrus.Panicf("Error while binding %s: %s", device, err)
+		}
 	}
 
 	if network == "userspace" {
 		if err := container.MountTunDev(wd); err != nil {
-			panic(err)
+			logrus.Panicf("Error in MountTunDev(): %s", err)
 		}
 	}
 
 	if err := pivotRoot(wd); err != nil {
-		panic(err)
+		logrus.Panicf("Error in pivotRoot(): %s", err)
 	}
 
 	switch network {
@@ -45,12 +58,12 @@ func pluginNamespace() {
 		{
 			ifce, err := container.New()
 			if err != nil {
-				panic(err)
+				logrus.Panic(err)
 			}
 
 			err = ifce.SetupNetwork()
 			if err != nil {
-				panic(err)
+				logrus.Panic(err)
 			}
 
 			go func(ifce *container.TunDevice) {
@@ -71,7 +84,7 @@ func pluginNamespace() {
 			// This assumes all the defaults of slirp4netns..
 			link, err := netlink.LinkByName("tap0")
 			if err != nil {
-				panic(err)
+				logrus.Panic(err)
 			}
 
 			addr := &netlink.Addr{
@@ -82,12 +95,12 @@ func pluginNamespace() {
 			}
 			err = netlink.AddrAdd(link, addr)
 			if err != nil {
-				panic(err)
+				logrus.Panic(err)
 			}
 
 			err = netlink.LinkSetUp(link)
 			if err != nil {
-				panic(err)
+				logrus.Panic(err)
 			}
 
 			route := &netlink.Route{
@@ -97,7 +110,7 @@ func pluginNamespace() {
 			}
 			err = netlink.RouteAdd(route)
 			if err != nil {
-				panic(err)
+				logrus.Panic(err)
 			}
 		}
 	}
@@ -112,6 +125,6 @@ func pluginNamespace() {
 	)
 	err = cmd.Run()
 	if err != nil {
-		panic(err)
+		logrus.Panic(err)
 	}
 }

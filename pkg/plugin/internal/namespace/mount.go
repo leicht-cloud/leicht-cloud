@@ -5,7 +5,8 @@ package namespace
 import (
 	"os"
 	"path/filepath"
-	"syscall"
+
+	"golang.org/x/sys/unix"
 )
 
 func pivotRoot(newroot string) error {
@@ -14,7 +15,7 @@ func pivotRoot(newroot string) error {
 	// bind mount newroot to itself - this is a slight hack needed to satisfy the
 	// pivot_root requirement that newroot and putold must not be on the same
 	// filesystem as the current root
-	if err := syscall.Mount(newroot, newroot, "", syscall.MS_BIND|syscall.MS_REC, ""); err != nil {
+	if err := unix.Mount(newroot, newroot, "", unix.MS_BIND|unix.MS_REC, ""); err != nil {
 		return err
 	}
 
@@ -24,7 +25,7 @@ func pivotRoot(newroot string) error {
 	}
 
 	// call pivot_root
-	if err := syscall.PivotRoot(newroot, putold); err != nil {
+	if err := unix.PivotRoot(newroot, putold); err != nil {
 		return err
 	}
 
@@ -35,7 +36,7 @@ func pivotRoot(newroot string) error {
 
 	// umount putold, which now lives at /.pivot_root
 	putold = "/.pivot_root"
-	if err := syscall.Unmount(putold, syscall.MNT_DETACH); err != nil {
+	if err := unix.Unmount(putold, unix.MNT_DETACH); err != nil {
 		return err
 	}
 
@@ -48,18 +49,35 @@ func pivotRoot(newroot string) error {
 }
 
 func mountProc(newroot string) error {
-	source := "proc"
 	target := filepath.Join(newroot, "/proc")
-	fstype := "proc"
-	flags := 0
-	data := ""
 
 	if err := os.MkdirAll(target, 0755); err != nil {
 		return err
 	}
-	if err := syscall.Mount(source, target, fstype, uintptr(flags), data); err != nil {
+
+	return unix.Mount("proc", target, "proc", 0, "")
+}
+
+func bindMount(newroot, mount string) error {
+	target := filepath.Join(newroot, mount)
+
+	if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
 		return err
 	}
 
-	return nil
+	stat, err := os.Stat(mount)
+	if err != nil {
+		return err
+	}
+
+	// basically a touch call to create the file, otherwise we can't mount to it.
+	f, err := os.OpenFile(target, os.O_CREATE, stat.Mode())
+	if err != nil {
+		return err
+	}
+	if err = f.Close(); err != nil {
+		return err
+	}
+
+	return unix.Mount(mount, target, "bind", unix.MS_BIND, "")
 }
