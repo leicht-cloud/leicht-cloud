@@ -49,6 +49,16 @@ func pluginNamespace() {
 		}
 	}
 
+	// if we're either in userspace network mode or in host mode, we copy /etc/resolv.conf from the host for dns config
+	// we copy this file as it is not uncommon for distros to have /etc/resolv.conf be a symlink to somewhere else on the host
+	// system. In which case, bind mounting or whatever doesn't work. If this causes issues later on, we could always decide
+	// to bind mount it if it's an actual file and only copy if it's a symlink or something alike I suppose.
+	if network == "userspace" || network == "host" {
+		if err := copyFile(wd, "/etc/resolv.conf"); err != nil {
+			logrus.Panic("Error while setting up /etc/resolv.conf: %s", err)
+		}
+	}
+
 	if err := pivotRoot(wd); err != nil {
 		logrus.Panicf("Error in pivotRoot(): %s", err)
 	}
@@ -109,6 +119,11 @@ func pluginNamespace() {
 				Gw:        net.IPv4(10, 0, 2, 2),
 			}
 			err = netlink.RouteAdd(route)
+			if err != nil {
+				logrus.Panic(err)
+			}
+
+			err = writeResolveConf("10.0.2.3")
 			if err != nil {
 				logrus.Panic(err)
 			}
