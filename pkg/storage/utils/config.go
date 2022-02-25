@@ -53,9 +53,9 @@ func fromConfig(cfg *Config, pManager *plugin.Manager) (storage.StorageProvider,
 		if err != nil {
 			stdout := plugin.Stdout()
 			if stdout != nil && len(stdout) > 0 {
-				logrus.Debugf("-----STDOUT FOR PLUGIN: %s-----", name)
+				logrus.Infof("-----STDOUT FOR PLUGIN: %s-----", name)
 				_, _ = io.Copy(os.Stdout, bytes.NewReader(stdout))
-				logrus.Debugf("-----END OF STDOUT FOR PLUGIN: %s-----", name)
+				logrus.Infof("-----END OF STDOUT FOR PLUGIN: %s-----", name)
 			}
 
 			closeErr := plugin.Close()

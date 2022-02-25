@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
 	"strings"
 
 	fileinfoPlugin "github.com/leicht-cloud/leicht-cloud/pkg/fileinfo/plugin"
@@ -13,6 +14,7 @@ import (
 	"github.com/leicht-cloud/leicht-cloud/pkg/prometheus"
 	"github.com/leicht-cloud/leicht-cloud/pkg/storage"
 	"github.com/sirupsen/logrus"
+	"go.uber.org/multierr"
 )
 
 type Manager struct {
@@ -50,8 +52,18 @@ func NewManager(pManager *plugin.Manager, prom *prometheus.Manager, mimetypeProv
 
 			provider, err := fileinfoPlugin.NewGrpcFileinfo(conn)
 			if err != nil {
-				return nil, err
+				stdout := plugin.Stdout()
+				if stdout != nil && len(stdout) > 0 {
+					logrus.Infof("-----STDOUT FOR PLUGIN: %s-----", name)
+					_, _ = io.Copy(os.Stdout, bytes.NewReader(stdout))
+					logrus.Infof("-----END OF STDOUT FOR PLUGIN: %s-----", name)
+				}
+
+				closeErr := plugin.Close()
+
+				return nil, multierr.Combine(err, closeErr)
 			}
+
 			out.providers[name] = prom.WrapFileInfo(provider, name)
 		} else {
 			p, err := types.GetProvider(name)
