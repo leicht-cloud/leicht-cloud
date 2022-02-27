@@ -4,6 +4,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"os/signal"
 
 	"github.com/docker/docker/pkg/reexec"
 	"github.com/schoentoon/nsnet/pkg/container"
@@ -138,8 +139,26 @@ func pluginNamespace() {
 		"GRPC_UNIXSOCKET=/grpc.sock",
 		"HTTP_UNIXSOCKET=/http.sock",
 	)
-	err = cmd.Run()
+	err = cmd.Start()
 	if err != nil {
 		logrus.Panic(err)
 	}
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+
+	go func(cmd *exec.Cmd, ch <-chan os.Signal) {
+		sig := <-c
+		err := cmd.Process.Signal(sig)
+		if err != nil {
+			logrus.Panic(err)
+		}
+	}(cmd, c)
+
+	err = cmd.Wait()
+	if err != nil {
+		logrus.Panic(err)
+	}
+
+	os.Exit(0)
 }
