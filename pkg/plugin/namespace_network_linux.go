@@ -1,11 +1,9 @@
 package plugin
 
 import (
-	"os"
 	"os/exec"
 	"strconv"
 	"syscall"
-	"time"
 
 	"github.com/schoentoon/nsnet/pkg/host"
 )
@@ -98,24 +96,10 @@ func (s *slirp4netns) PreClose(runner *namespaceRunner) error {
 }
 
 func (s *slirp4netns) PostClose(runner *namespaceRunner) error {
-	err := s.cmd.Process.Signal(os.Interrupt)
-	if err != nil {
-		err = s.cmd.Process.Kill()
-		if err != nil {
-			return err
-		}
-	}
+	// as the network namespace to which slirp4netns attached disappeared, it should
+	// automatically exit itself. to not leave any defunct processes, we wait for that
+	// to happen here. but as the process is already death, we ignore any form of error from it
+	_ = s.cmd.Wait()
 
-	c := make(chan error, 1)
-	defer close(c)
-	go func(c chan<- error, process *exec.Cmd) {
-		c <- process.Wait()
-	}(c, s.cmd)
-
-	select {
-	case err := <-c:
-		return err
-	case <-time.After(processKillTimeout):
-		return s.cmd.Process.Kill()
-	}
+	return nil
 }
