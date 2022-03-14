@@ -49,7 +49,7 @@ func (m *Manager) Serve(user *models.User, w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	err := app.Serve(user, w, path)
+	err := app.Serve(user, w, r.Method, path, r.Body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}

@@ -14,13 +14,13 @@ type App struct {
 	plugin plugin.PluginInterface
 }
 
-func (a *App) Serve(user *models.User, w http.ResponseWriter, path string) error {
+func (a *App) Serve(user *models.User, w http.ResponseWriter, method, path string, body io.Reader) error {
 	uri, err := url.Parse(fmt.Sprintf("http://127.0.0.1/%s", path))
 	if err != nil {
 		return err
 	}
 
-	req, err := http.NewRequest("GET", uri.String(), nil)
+	req, err := http.NewRequest(method, uri.String(), body)
 	if err != nil {
 		return err
 	}
