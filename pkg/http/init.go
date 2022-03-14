@@ -3,6 +3,7 @@ package http
 import (
 	"net/http"
 
+	"github.com/leicht-cloud/leicht-cloud/pkg/app"
 	"github.com/leicht-cloud/leicht-cloud/pkg/auth"
 	"github.com/leicht-cloud/leicht-cloud/pkg/fileinfo"
 	"github.com/leicht-cloud/leicht-cloud/pkg/http/admin"
@@ -18,6 +19,7 @@ func InitHttpServer(
 	authProvider *auth.Provider,
 	storage storage.StorageProvider,
 	pluginManager *plugin.Manager,
+	apps *app.Manager,
 	fileinfo *fileinfo.Manager,
 ) (*http.Server, error) {
 	assets, err := initStatic()
@@ -33,6 +35,7 @@ func InitHttpServer(
 	mux.Handle("/", &rootHandler{DB: db, StaticHandler: templateHandler})
 	mux.Handle("/login", &loginHandler{DB: db, Auth: authProvider, StaticHandler: templateHandler})
 	mux.Handle("/signup", &signupHandler{Assets: assets, DB: db, Storage: storage})
+	mux.Handle("/apps/", auth.AuthHandler(apps))
 	webapi.Init(mux, db, storage, fileinfo)
 	admin.Init(mux, authProvider, templateHandler, pluginManager, db)
 

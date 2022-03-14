@@ -37,7 +37,7 @@ func main() {
 		logrus.Fatal(err)
 	}
 
-	validTypes := []string{"fileinfo", "storage"}
+	validTypes := []string{"fileinfo", "storage", "app"}
 	found := false
 
 	for _, typ := range validTypes {

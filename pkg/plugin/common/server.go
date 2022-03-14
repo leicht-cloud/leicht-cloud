@@ -29,43 +29,48 @@ func Init(registerGrpc func(*grpc.Server) error) error {
 		logrus.SetLevel(logrus.DebugLevel)
 		logrus.SetReportCaller(true)
 	}
-	grpcListener, err := createListener("GRPC")
-	if err != nil {
-		return err
-	}
-	logrus.Infof("Listening on %s for grpc\n", grpcListener.Addr())
-
-	grpcServer := grpc.NewServer(
-		grpc.MaxRecvMsgSize(1024*1024*32),
-		grpc.WriteBufferSize(0),
-		grpc.ReadBufferSize(0),
-	)
-
-	err = registerGrpc(grpcServer)
-	if err != nil {
-		return err
-	}
 
 	var wg sync.WaitGroup
-	wg.Add(2)
+	var grpcServer *grpc.Server
 
-	go func(wg *sync.WaitGroup) {
-		logrus.Info("Starting grpc listener")
-		err := grpcServer.Serve(grpcListener)
+	if registerGrpc != nil {
+		grpcListener, err := createListener("GRPC")
 		if err != nil {
-			logrus.Error(err)
+			return err
 		}
-		wg.Done()
-	}(&wg)
+		logrus.Infof("Listening on %s for grpc\n", grpcListener.Addr())
 
+		grpcServer = grpc.NewServer(
+			grpc.MaxRecvMsgSize(1024*1024*32),
+			grpc.WriteBufferSize(0),
+			grpc.ReadBufferSize(0),
+		)
+
+		err = registerGrpc(grpcServer)
+		if err != nil {
+			return err
+		}
+
+		wg.Add(1)
+		go func(wg *sync.WaitGroup) {
+			logrus.Info("Starting grpc listener")
+			err := grpcServer.Serve(grpcListener)
+			if err != nil {
+				logrus.Error(err)
+			}
+			wg.Done()
+		}(&wg)
+	}
+
+	wg.Add(1)
 	httpListener, err := createListener("HTTP")
 	if err != nil {
 		return err
 	}
 
-	httpServer := http.Server{
-		Handler: promhttp.Handler(),
-	}
+	httpServer := http.Server{}
+
+	http.Handle("/metrics", promhttp.Handler())
 
 	go func(wg *sync.WaitGroup) {
 		logrus.Info("Starting prometheus listener")
@@ -81,7 +86,9 @@ func Init(registerGrpc func(*grpc.Server) error) error {
 
 	go func(grpcServer *grpc.Server, httpServer *http.Server, ch <-chan os.Signal) {
 		<-c
-		grpcServer.Stop()
+		if grpcServer != nil {
+			grpcServer.Stop()
+		}
 		httpServer.Close()
 		os.Exit(0)
 	}(grpcServer, &httpServer, c)

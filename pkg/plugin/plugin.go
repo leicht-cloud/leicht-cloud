@@ -16,6 +16,7 @@ import (
 
 type PluginInterface interface {
 	GrpcConn() (*grpc.ClientConn, error)
+	HttpClient() *http.Client
 	Stdout() []byte
 	Close() error
 }
@@ -125,4 +126,8 @@ func (p *plugin) GrpcConn() (*grpc.ClientConn, error) {
 			return dialer.DialContext(ctx, "unix", addr)
 		}),
 	)
+}
+
+func (p *plugin) HttpClient() *http.Client {
+	return &p.httpClient
 }

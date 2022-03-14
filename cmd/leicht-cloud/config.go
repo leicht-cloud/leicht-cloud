@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 
+	"github.com/leicht-cloud/leicht-cloud/pkg/app"
 	"github.com/leicht-cloud/leicht-cloud/pkg/auth"
 	"github.com/leicht-cloud/leicht-cloud/pkg/fileinfo"
 	"github.com/leicht-cloud/leicht-cloud/pkg/plugin"
@@ -19,6 +20,7 @@ type Config struct {
 	Storage    storage.Config    `yaml:"storage"`
 	Plugin     plugin.Config     `yaml:"plugin"`
 	FileInfo   fileinfo.Config   `yaml:"fileinfo"`
+	Apps       app.Config        `yaml:"apps"`
 	Auth       auth.Config       `yaml:"auth"`
 	Prometheus prometheus.Config `yaml:"prometheus"`
 }
