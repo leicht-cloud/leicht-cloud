@@ -32,9 +32,22 @@ func main() {
 	}
 	path := flag.Arg(0)
 
-	manifest, err := plugin.ParseManifestFromFile(path)
+	manifest, err := plugin.ParseManifestFromFile(path, "")
 	if err != nil {
 		logrus.Fatal(err)
+	}
+
+	validTypes := []string{"fileinfo", "storage"}
+	found := false
+
+	for _, typ := range validTypes {
+		if manifest.Type == typ {
+			found = true
+		}
+	}
+
+	if !found {
+		logrus.Fatalf("Invalid type: %s", manifest.Type)
 	}
 
 	fout, err := os.OpenFile(filepath.Join(*outdir, fmt.Sprintf("%s.plugin", manifest.Name)), os.O_CREATE|os.O_WRONLY, 0600)

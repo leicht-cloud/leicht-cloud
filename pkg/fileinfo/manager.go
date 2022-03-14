@@ -40,7 +40,7 @@ func NewManager(pManager *plugin.Manager, prom *prometheus.Manager, mimetypeProv
 	for _, name := range provider {
 		if strings.HasPrefix(name, "plugin:") {
 			name = strings.TrimPrefix(name, "plugin:")
-			plugin, err := pManager.Start(name)
+			plugin, err := pManager.Start(name, "fileinfo")
 			if err != nil {
 				return nil, err
 			}

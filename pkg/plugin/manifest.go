@@ -10,9 +10,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// the valid plugin types
-var types = []string{"storage", "fileinfo"}
-
 var (
 	ErrNoName = errors.New("No name specified")
 )
@@ -29,16 +26,16 @@ type Permissions struct {
 }
 
 // path should be the path to the plugin, not directly to the manifest
-func ParseManifestFromFile(path string) (*Manifest, error) {
+func ParseManifestFromFile(path, typ string) (*Manifest, error) {
 	f, err := os.Open(filepath.Join(path, "plugin.manifest.yml"))
 	if err != nil {
 		return nil, err
 	}
 	defer f.Close()
-	return parseManifest(f)
+	return parseManifest(f, typ)
 }
 
-func parseManifest(r io.Reader) (*Manifest, error) {
+func parseManifest(r io.Reader, typ string) (*Manifest, error) {
 	out := &Manifest{}
 	err := yaml.NewDecoder(r).Decode(out)
 	if err != nil {
@@ -47,17 +44,8 @@ func parseManifest(r io.Reader) (*Manifest, error) {
 	if out.Name == "" {
 		return nil, ErrNoName
 	}
-	if !validType(out.Type) {
-		return nil, fmt.Errorf("Invalid type: %s", out.Type)
+	if typ != "" && out.Type != typ {
+		return nil, fmt.Errorf("Unwanted type: %s", out.Type)
 	}
 	return out, nil
-}
-
-func validType(typ string) bool {
-	for _, t := range types {
-		if t == typ {
-			return true
-		}
-	}
-	return false
 }

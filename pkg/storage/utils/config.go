@@ -39,7 +39,7 @@ func fromConfig(cfg *Config, pManager *plugin.Manager) (storage.StorageProvider,
 	} else if strings.HasPrefix(cfg.Provider, "plugin:") {
 		name := strings.TrimPrefix(cfg.Provider, "plugin:")
 
-		plugin, err := pManager.Start(name)
+		plugin, err := pManager.Start(name, "storage")
 		if err != nil {
 			return nil, err
 		}

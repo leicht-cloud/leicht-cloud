@@ -96,7 +96,7 @@ const plugin_permissions = 0750
 // We do however also support running against a directory directly, this does
 // assume the binary is called the same as the plugin (it's copied regardless)
 // and the directory has a manifest in it.
-func (m *Manager) prepareDirectory(name string) (*Manifest, error) {
+func (m *Manager) prepareDirectory(name, typ string) (*Manifest, error) {
 	workDir := filepath.Join(m.cfg.WorkDir, name)
 	err := os.MkdirAll(workDir, 0700)
 	if err != nil {
@@ -133,7 +133,7 @@ func (m *Manager) prepareDirectory(name string) (*Manifest, error) {
 					return nil, err
 				}
 				if header.Name == "plugin.manifest.yml" {
-					manifest, err = parseManifest(tr)
+					manifest, err = parseManifest(tr, typ)
 					if err != nil {
 						return nil, err
 					}
@@ -165,7 +165,7 @@ func (m *Manager) prepareDirectory(name string) (*Manifest, error) {
 		dir := filepath.Join(path, name)
 		fi, err := os.Stat(dir)
 		if err == nil && fi.IsDir() {
-			manifest, err := ParseManifestFromFile(filepath.Join(path, name))
+			manifest, err := ParseManifestFromFile(filepath.Join(path, name), typ)
 			if err != nil {
 				return nil, err
 			}
@@ -187,8 +187,8 @@ func (m *Manager) prepareDirectory(name string) (*Manifest, error) {
 	return nil, fmt.Errorf("Plugin not found: %s", name)
 }
 
-func (m *Manager) Start(name string) (PluginInterface, error) {
-	manifest, err := m.prepareDirectory(name)
+func (m *Manager) Start(name, typ string) (PluginInterface, error) {
+	manifest, err := m.prepareDirectory(name, typ)
 	if err != nil {
 		return nil, err
 	}
