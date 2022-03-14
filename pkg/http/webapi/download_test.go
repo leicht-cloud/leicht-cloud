@@ -31,9 +31,9 @@ func TestDownload(t *testing.T) {
 	assert.NoError(t, err, err)
 	raw := data.Bytes()
 
-	memfs.Data["/test.data"] = raw
+	memfs.Data["/some/nested/path/test.data"] = raw
 
-	req, err := http.NewRequest(http.MethodGet, "/webapi/download?filename=test.data", nil)
+	req, err := http.NewRequest(http.MethodGet, "/webapi/download?filename=/some/nested/path/test.data", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -43,6 +43,7 @@ func TestDownload(t *testing.T) {
 	handler.Serve(user, rr, req)
 
 	assert.Equal(t, http.StatusOK, rr.Code, rr.Result().Status)
+	assert.Equal(t, "attachment; filename=\"test.data\"", rr.Header().Get("Content-Disposition"))
 
 	read, err := io.ReadAll(rr.Body)
 	if assert.NoError(t, err) {

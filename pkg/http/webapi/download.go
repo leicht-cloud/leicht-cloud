@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"path/filepath"
 
 	"github.com/leicht-cloud/leicht-cloud/pkg/auth"
 	_ "github.com/leicht-cloud/leicht-cloud/pkg/fileinfo/builtin"
@@ -29,14 +30,16 @@ func newDownloadHandler(db *gorm.DB, store storage.StorageProvider) http.Handler
 }
 
 func (h *downloadHandler) Serve(user *models.User, w http.ResponseWriter, r *http.Request) {
-	filename := r.URL.Query().Get("filename")
+	path := r.URL.Query().Get("filename")
 
-	file, err := h.Storage.File(r.Context(), user, filename)
+	file, err := h.Storage.File(r.Context(), user, path)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 	defer file.Close()
+
+	filename := filepath.Base(path)
 
 	w.Header().Add("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
 
