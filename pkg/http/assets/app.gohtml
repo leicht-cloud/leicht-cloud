@@ -22,7 +22,7 @@
 
 <body>
     <div class="container wrapper">
-        <iframe src="/apps/embed/{{ .App }}">
+        <iframe src="/apps/embed/{{ .App }}" sandbox="{{ .Permissions }}">
         </iframe>
     </div>
 </body>

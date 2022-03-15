@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/leicht-cloud/leicht-cloud/pkg/models"
 	"github.com/leicht-cloud/leicht-cloud/pkg/plugin"
@@ -34,4 +35,15 @@ func (a *App) Serve(user *models.User, w http.ResponseWriter, method, path strin
 	_, err = io.Copy(w, resp.Body)
 
 	return err
+}
+
+func (a *App) IFramePermissions() string {
+	manifest := a.plugin.Manifest()
+	out := ""
+
+	if manifest.Permissions.App.Javascript {
+		out += "allow-scripts "
+	}
+
+	return strings.Trim(out, " ")
 }

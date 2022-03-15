@@ -19,11 +19,13 @@ type PluginInterface interface {
 	HttpClient() *http.Client
 	Stdout() []byte
 	Close() error
+	Manifest() *Manifest
 }
 
 type plugin struct {
-	name    string
-	workDir string
+	name     string
+	manifest *Manifest
+	workDir  string
 
 	httpClient http.Client
 
@@ -33,9 +35,10 @@ type plugin struct {
 
 func (m *Manager) newPluginInstance(manifest *Manifest, cfg *Config, name string) (*plugin, error) {
 	p := &plugin{
-		name:    name,
-		workDir: filepath.Join(cfg.WorkDir, name),
-		stdout:  newStdout(),
+		name:     name,
+		workDir:  filepath.Join(cfg.WorkDir, name),
+		stdout:   newStdout(),
+		manifest: manifest,
 	}
 	// we initialize httpClient seperate, as it needs an initialized plugin already for the httpSocketFile call
 	p.httpClient = http.Client{
@@ -130,4 +133,8 @@ func (p *plugin) GrpcConn() (*grpc.ClientConn, error) {
 
 func (p *plugin) HttpClient() *http.Client {
 	return &p.httpClient
+}
+
+func (p *plugin) Manifest() *Manifest {
+	return p.manifest
 }

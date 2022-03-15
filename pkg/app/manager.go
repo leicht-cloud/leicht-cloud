@@ -35,6 +35,15 @@ func NewManager(pManager *plugin.Manager, prom *prometheus.Manager, apps ...stri
 	return out, nil
 }
 
+func (m *Manager) GetApp(name string) (*App, error) {
+	app, ok := m.apps[name]
+	if !ok {
+		return nil, fmt.Errorf("App not found: %s", name)
+	}
+
+	return app, nil
+}
+
 func (m *Manager) Serve(user *models.User, w http.ResponseWriter, r *http.Request) {
 	split := strings.SplitN(strings.TrimPrefix(r.URL.Path, "/apps/embed/"), "/", 2)
 	appname := split[0]
@@ -43,13 +52,13 @@ func (m *Manager) Serve(user *models.User, w http.ResponseWriter, r *http.Reques
 		path = split[1]
 	}
 
-	app, ok := m.apps[appname]
-	if !ok {
-		http.Error(w, fmt.Sprintf("App not found: %s", appname), http.StatusNotFound)
+	app, err := m.GetApp(appname)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 
-	err := app.Serve(user, w, r.Method, path, r.Body)
+	err = app.Serve(user, w, r.Method, path, r.Body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}

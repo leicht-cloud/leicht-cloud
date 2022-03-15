@@ -22,7 +22,12 @@ type Manifest struct {
 }
 
 type Permissions struct {
-	Network bool `yaml:"network"`
+	Container struct {
+		Network bool `yaml:"network"`
+	} `yaml:"container"`
+	App struct {
+		Javascript bool `yaml:"javascript"`
+	} `yaml:"app"`
 }
 
 // path should be the path to the plugin, not directly to the manifest
