@@ -54,3 +54,13 @@ func (m *Manager) Serve(user *models.User, w http.ResponseWriter, r *http.Reques
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
+
+func (m *Manager) Apps() []string {
+	out := make([]string, 0)
+
+	for app := range m.apps {
+		out = append(out, app)
+	}
+
+	return out
+}

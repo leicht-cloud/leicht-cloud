@@ -12,9 +12,12 @@ type TemplateHandler struct {
 
 	template    *template.Template
 	fileHandler http.Handler
+
+	apps    []string
+	plugins []string
 }
 
-func createFuncMap(assets fs.FS) (out template.FuncMap, err error) {
+func createFuncMap(assets fs.FS, apps, plugins []string) (out template.FuncMap, err error) {
 	// we gracefully handle panics in here, as tmplFunc may panic when it fails
 	// to load a template. this solution is cleaner than making it return an error
 	// as I can still just put the calls directly into the FuncMap initialization
@@ -27,14 +30,20 @@ func createFuncMap(assets fs.FS) (out template.FuncMap, err error) {
 		}
 	}()
 
-	return template.FuncMap{
-		"navbar":      tmplFunc(assets, "includes/navbar.gohtml"),
-		"adminnavbar": tmplFunc(assets, "includes/navbar.admin.gohtml"),
-		"add":         func(a, b int) int { return a + b },
+	out = template.FuncMap{
+		"apps":    func() []string { return apps },
+		"plugins": func() []string { return plugins },
+		"add":     func(a, b int) int { return a + b },
 		"notnil": func(data interface{}) bool {
 			return data != nil
 		},
-	}, err
+	}
+
+	// we attach these 2 manually, as they will both use a previously registered function
+	out["navbar"] = tmplFunc(assets, "includes/navbar.gohtml", out)
+	out["adminnavbar"] = tmplFunc(assets, "includes/navbar.admin.gohtml", out)
+
+	return out, err
 }
 
 type templateDataKey int

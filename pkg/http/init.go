@@ -26,7 +26,7 @@ func InitHttpServer(
 	if err != nil {
 		return nil, err
 	}
-	templateHandler, err := template.NewHandler(assets)
+	templateHandler, err := template.NewHandler(assets, apps.Apps(), pluginManager.Plugins())
 	if err != nil {
 		return nil, err
 	}

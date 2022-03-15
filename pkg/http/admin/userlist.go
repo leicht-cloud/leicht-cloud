@@ -10,13 +10,11 @@ import (
 
 type userlistHandler struct {
 	StaticHandler http.Handler
-	AdminNavbar   template.AdminNavbarData
 	DB            *gorm.DB
 }
 
 type userlistTemplateData struct {
-	Navbar      template.NavbarData
-	AdminNavbar template.AdminNavbarData
+	Navbar template.NavbarData
 
 	Users []*models.User
 }
@@ -26,7 +24,6 @@ func (h *userlistHandler) Serve(user *models.User, w http.ResponseWriter, r *htt
 		Navbar: template.NavbarData{
 			Admin: user.Admin,
 		},
-		AdminNavbar: h.AdminNavbar,
 	}
 
 	tx := h.DB.Find(&data.Users)

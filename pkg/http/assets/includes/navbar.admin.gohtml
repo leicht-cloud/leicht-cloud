@@ -6,11 +6,11 @@
     <a class="list-group-item d-flex justify-content-between align-items-center collapsed" data-bs-toggle="collapse"
       data-bs-target="#plugins-collapse" aria-expanded="true">
       Plugins
-      <span class="badge bg-primary rounded-pill">{{ len .Plugins }}</span>
+      <span class="badge bg-primary rounded-pill">{{ len plugins }}</span>
     </a>
     <div class="collapse show" id="plugins-collapse">
       <ul class="list-group-item fw-normal pb-1 small">
-        {{ range $i, $plugin := .Plugins }}
+        {{ range $i, $plugin := plugins }}
         <li><a href="/admin/plugin?name={{ $plugin }}" class="link-dark rounded">{{ $plugin }}</a></li>
         {{ end }}
       </ul>
