@@ -35,7 +35,8 @@ func InitHttpServer(
 	mux.Handle("/", &rootHandler{DB: db, StaticHandler: templateHandler})
 	mux.Handle("/login", &loginHandler{DB: db, Auth: authProvider, StaticHandler: templateHandler})
 	mux.Handle("/signup", &signupHandler{Assets: assets, DB: db, Storage: storage})
-	mux.Handle("/apps/", auth.AuthHandler(apps))
+	mux.Handle("/apps/embed/", auth.AuthHandler(apps))
+	mux.Handle("/apps/", auth.AuthHandler(&appsHandler{StaticHandler: templateHandler}))
 	webapi.Init(mux, db, storage, fileinfo)
 	admin.Init(mux, authProvider, templateHandler, pluginManager, db)
 

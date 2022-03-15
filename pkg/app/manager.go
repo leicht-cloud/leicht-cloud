@@ -36,7 +36,7 @@ func NewManager(pManager *plugin.Manager, prom *prometheus.Manager, apps ...stri
 }
 
 func (m *Manager) Serve(user *models.User, w http.ResponseWriter, r *http.Request) {
-	split := strings.SplitN(strings.TrimPrefix(r.URL.Path, "/apps/"), "/", 2)
+	split := strings.SplitN(strings.TrimPrefix(r.URL.Path, "/apps/embed/"), "/", 2)
 	appname := split[0]
 	path := "/"
 	if len(split) == 2 {

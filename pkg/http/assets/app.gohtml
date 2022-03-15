@@ -1,0 +1,30 @@
+<html>
+
+<head>
+    <link href="/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+    <script src="/js/lib/bootstrap.bundle.min.js"></script>
+    <script src="/js/lib/jquery.min.js"></script>
+
+    {{ navbar .Navbar }}
+
+    <style>
+        .wrapper {
+            display: flex;
+            align-items: stretch;
+        }
+
+        #sidebar {
+            min-width: 250px;
+            max-width: 250px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container wrapper">
+        <iframe src="/apps/embed/{{ .App }}">
+        </iframe>
+    </div>
+</body>
+
+</html>
