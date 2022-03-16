@@ -51,6 +51,10 @@ func testInitUser(t *testing.T, user *models.User, storage StorageProvider) {
 }
 
 func testMkdir(t *testing.T, user *models.User, storage StorageProvider) {
+	t.Run("ReadOnly", func(t *testing.T) {
+		readonly := ReadOnly(storage)
+		assert.Error(t, ErrReadOnly, readonly.Mkdir(context.Background(), user, "random/dir"))
+	})
 	assert.NoError(t, storage.Mkdir(context.Background(), user, "random/dir"))
 }
 
@@ -64,6 +68,15 @@ func testFile(t *testing.T, user *models.User, storage StorageProvider, size int
 	moved := fmt.Sprintf("moved-%d", size)
 
 	if !t.Run("Write", func(t *testing.T) {
+		t.Run("ReadOnly", func(t *testing.T) {
+			readonly := ReadOnly(storage)
+			file, err := readonly.File(context.Background(), user, filename)
+			if assert.NotNil(t, file) && assert.NoError(t, err) {
+				_, err = file.Write(buffer)
+				assert.Error(t, ErrReadOnly, err)
+			}
+		})
+
 		file, err := storage.File(context.Background(), user, filename)
 		if !assert.NoError(t, err) {
 			return
@@ -101,6 +114,11 @@ func testFile(t *testing.T, user *models.User, storage StorageProvider, size int
 	}
 
 	if !t.Run("Move", func(t *testing.T) {
+		t.Run("ReadOnly", func(t *testing.T) {
+			readonly := ReadOnly(storage)
+			assert.Error(t, ErrReadOnly, readonly.Move(context.Background(), user, filename, moved))
+		})
+
 		assert.NoError(t, storage.Move(context.Background(), user, filename, moved))
 	}) {
 		return
@@ -139,6 +157,11 @@ func testFile(t *testing.T, user *models.User, storage StorageProvider, size int
 	}
 
 	if !t.Run("Delete", func(t *testing.T) {
+		t.Run("ReadOnly", func(t *testing.T) {
+			readonly := ReadOnly(storage)
+			assert.Error(t, ErrReadOnly, readonly.Delete(context.Background(), user, moved))
+		})
+
 		err := storage.Delete(context.Background(), user, moved)
 		assert.NoError(t, err)
 
