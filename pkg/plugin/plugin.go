@@ -20,6 +20,7 @@ type PluginInterface interface {
 	Stdout() []byte
 	Close() error
 	Manifest() *Manifest
+	WorkDir() string
 }
 
 type plugin struct {
@@ -137,4 +138,8 @@ func (p *plugin) HttpClient() *http.Client {
 
 func (p *plugin) Manifest() *Manifest {
 	return p.manifest
+}
+
+func (p *plugin) WorkDir() string {
+	return p.workDir
 }

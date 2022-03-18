@@ -27,6 +27,11 @@ type Permissions struct {
 	} `yaml:"container"`
 	App struct {
 		Javascript bool `yaml:"javascript"`
+		Storage    struct {
+			Enabled    bool `yaml:"enabled"`
+			ReadWrite  bool `yaml:"readwrite"`
+			WholeStore bool `yaml:"wholestore"`
+		} `yaml:"storage"`
 	} `yaml:"app"`
 }
 
