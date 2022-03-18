@@ -51,7 +51,7 @@
           <div class="modal-body">
             <form action="/webapi/mkdir" method="POST">
 
-              {{ $fullpath := "" }}
+              {{ $fullpath := "/" }}
               {{ range $folder := .Dir }}
                 {{ if ne $folder "" }}
                   {{ $fullpath = printf "%s/%s" $fullpath $folder }}
