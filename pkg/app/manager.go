@@ -38,7 +38,6 @@ func NewManager(pManager *plugin.Manager, store storage.StorageProvider, prom *p
 		}
 
 		manifest := plugin.Manifest()
-		logrus.Debugf("manifest: %+v", manifest)
 
 		if manifest.Permissions.App.Storage.Enabled {
 			err = app.setupStorage(store, manifest.Permissions.App.Storage.ReadWrite, manifest.Permissions.App.Storage.WholeStore)
