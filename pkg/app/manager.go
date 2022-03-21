@@ -14,6 +14,7 @@ import (
 	"github.com/leicht-cloud/leicht-cloud/pkg/storage/firewall"
 	storagePlugin "github.com/leicht-cloud/leicht-cloud/pkg/storage/plugin"
 	"github.com/sirupsen/logrus"
+	"go.uber.org/multierr"
 	"google.golang.org/grpc"
 )
 
@@ -52,12 +53,22 @@ func NewManager(pManager *plugin.Manager, store storage.StorageProvider, prom *p
 	return out, nil
 }
 
+func (m *Manager) Close() error {
+	var err error
+	for _, app := range m.apps {
+		err = multierr.Append(err, app.Close())
+	}
+	return err
+}
+
 func (a *App) setupStorage(store storage.StorageProvider, readwrite, wholestore bool) error {
 	socketPath := filepath.Join(a.plugin.WorkDir(), "storage.sock")
 	listener, err := net.Listen("unix", socketPath)
 	if err != nil {
 		return err
 	}
+	// we add the listener as a closer, so it will close correctly
+	a.closers = append(a.closers, listener)
 
 	grpcServer := grpc.NewServer(
 		grpc.MaxRecvMsgSize(1024*1024*32),
@@ -95,12 +106,16 @@ func (m *Manager) GetApp(name string) (*App, error) {
 }
 
 func (m *Manager) Serve(user *models.User, w http.ResponseWriter, r *http.Request) {
+	logrus.Debugf("Incoming path: %s", r.URL.Path)
 	split := strings.SplitN(strings.TrimPrefix(r.URL.Path, "/apps/embed/"), "/", 2)
 	appname := split[0]
 	path := "/"
 	if len(split) == 2 {
 		path = split[1]
 	}
+
+	logrus.Debugf("split: %#v", split)
+	logrus.Debugf("path: %s", path)
 
 	app, err := m.GetApp(appname)
 	if err != nil {

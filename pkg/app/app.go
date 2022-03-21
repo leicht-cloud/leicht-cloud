@@ -12,6 +12,7 @@ import (
 	"github.com/golang-jwt/jwt"
 	"github.com/leicht-cloud/leicht-cloud/pkg/models"
 	"github.com/leicht-cloud/leicht-cloud/pkg/plugin"
+	"go.uber.org/multierr"
 )
 
 type App struct {
@@ -19,6 +20,8 @@ type App struct {
 
 	jwtPrivateKey ed25519.PrivateKey
 	jwtPublicKey  ed25519.PublicKey
+
+	closers []io.Closer
 }
 
 func newApp(plugin plugin.PluginInterface) (*App, error) {
@@ -30,7 +33,17 @@ func newApp(plugin plugin.PluginInterface) (*App, error) {
 		plugin:        plugin,
 		jwtPrivateKey: privateKey,
 		jwtPublicKey:  publicKey,
+		closers:       make([]io.Closer, 0),
 	}, nil
+}
+
+func (a *App) Close() error {
+	var err error
+	for _, closer := range a.closers {
+		err = multierr.Append(err, closer.Close())
+	}
+
+	return err
 }
 
 type UserClaims struct {
