@@ -46,6 +46,10 @@ func (a *App) Close() error {
 	return err
 }
 
+func (a *App) GetPlugin() plugin.PluginInterface {
+	return a.plugin
+}
+
 type UserClaims struct {
 	jwt.StandardClaims
 	models.User

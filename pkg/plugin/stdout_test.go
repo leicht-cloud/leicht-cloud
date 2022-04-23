@@ -66,3 +66,19 @@ func TestRemoveChannel(t *testing.T) {
 	assert.Len(t, stdout.channels, 99)
 	assert.NotContains(t, stdout.channels, ch)
 }
+
+func TestReader(t *testing.T) {
+	stdout := newStdout()
+
+	stdout.Write(testText)
+	reader := stdout.Reader()
+
+	buf := make([]byte, 1024*4)
+	n, err := reader.Read(buf)
+	assert.NoError(t, err)
+	assert.Len(t, testText, n)
+
+	stdout.Write(testText)
+	assert.NoError(t, err)
+	assert.Len(t, testText, n)
+}

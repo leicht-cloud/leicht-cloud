@@ -2,6 +2,7 @@ package plugin
 
 import (
 	"bytes"
+	"io"
 	"sync"
 )
 
@@ -83,4 +84,30 @@ func (c *StdoutChannel) Close() error {
 	c.stdout.removeChannel(c)
 	close(c.ch)
 	return nil
+}
+
+type stdoutReader struct {
+	ch  *StdoutChannel
+	buf *bytes.Reader
+}
+
+func (s *Stdout) Reader() io.ReadCloser {
+	reader := &stdoutReader{
+		ch: s.Channel(),
+	}
+
+	return reader
+}
+
+func (r *stdoutReader) Read(p []byte) (int, error) {
+	if r.buf == nil || r.buf.Len() == 0 {
+		buf := <-r.ch.Channel()
+		r.buf = bytes.NewReader(buf)
+	}
+
+	return r.buf.Read(p)
+}
+
+func (r *stdoutReader) Close() error {
+	return r.ch.Close()
 }

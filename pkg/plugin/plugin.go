@@ -2,6 +2,7 @@ package plugin
 
 import (
 	"context"
+	"io"
 	"net"
 	"net/http"
 	"path/filepath"
@@ -17,7 +18,8 @@ import (
 type PluginInterface interface {
 	GrpcConn() (*grpc.ClientConn, error)
 	HttpClient() *http.Client
-	Stdout() []byte
+	StdoutDump() []byte
+	Stdout() io.ReadCloser
 	Close() error
 	Manifest() *Manifest
 	WorkDir() string
@@ -80,8 +82,12 @@ func (p *plugin) Close() error {
 	return p.runner.Close()
 }
 
-func (p *plugin) Stdout() []byte {
+func (p *plugin) StdoutDump() []byte {
 	return p.stdout.Bytes()
+}
+
+func (p *plugin) Stdout() io.ReadCloser {
+	return p.stdout.Reader()
 }
 
 func (p *plugin) Describe(chan<- *prometheus.Desc) {

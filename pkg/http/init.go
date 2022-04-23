@@ -22,7 +22,7 @@ func InitHttpServer(
 	apps *app.Manager,
 	fileinfo *fileinfo.Manager,
 ) (*http.Server, error) {
-	assets, err := initStatic()
+	assets, err := InitStatic()
 	if err != nil {
 		return nil, err
 	}
