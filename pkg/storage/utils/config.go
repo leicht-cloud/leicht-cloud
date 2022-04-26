@@ -26,7 +26,7 @@ func (c *Config) CreateProvider(pManager *plugin.Manager) (storage.StorageProvid
 	if err != nil {
 		return nil, err
 	}
-	return &ValidateWrapper{Next: out}, nil
+	return &ValidateWrapper{proxy: out}, nil
 }
 
 func fromConfig(cfg *Config, pManager *plugin.Manager) (storage.StorageProvider, error) {

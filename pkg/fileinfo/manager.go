@@ -77,6 +77,10 @@ func NewManager(pManager *plugin.Manager, prom *prometheus.Manager, mimetypeProv
 	return out, nil
 }
 
+func (m *Manager) Close() error {
+	return m.mimeTypeProvider.Close()
+}
+
 type Output struct {
 	Channel  <-chan types.Result `json:"-"`
 	MimeType types.MimeType      `json:"mime"`

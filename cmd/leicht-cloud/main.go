@@ -74,6 +74,7 @@ func main() {
 	if err != nil {
 		logrus.Fatal(err)
 	}
+	defer fileinfo.Close()
 
 	logrus.Infof("Initializing apps")
 	apps, err := config.Apps.CreateProvider(pluginManager, storage, prom)

@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+
+	"github.com/sirupsen/logrus"
 )
 
 var ErrSkip = errors.New("Skip")
@@ -28,11 +30,26 @@ func GetProvider(name string) (FileInfoProvider, error) {
 }
 
 func GetMimeProvider(name string) (MimeTypeProvider, error) {
+	// as a default we try to load libmagic first, if that doesn't work
+	// we fall back to the gonative implementation.
+	if name == "" {
+		out, err := getMimeProvider("libmagic")
+		if err == nil {
+			logrus.Info("No mime provider specified, using libmagic")
+			return out, nil
+		}
+		logrus.Infof("No mime provider specified, tried using libmagic but failed with: %s", err)
+		return getMimeProvider("gonative")
+	}
+	return getMimeProvider(name)
+}
+
+func getMimeProvider(name string) (MimeTypeProvider, error) {
 	p, ok := mimeprovider[name]
 	if !ok {
 		return nil, fmt.Errorf("No provider found with the name: %s", name)
 	}
-	return p, nil
+	return p, p.Init()
 }
 
 type FileInfoProvider interface {
@@ -48,6 +65,9 @@ type FileInfoProvider interface {
 }
 
 type MimeTypeProvider interface {
+	Init() error
+	io.Closer
+
 	MinimumBytes() int64
 
 	MimeType(filename string, reader io.Reader) (*MimeType, error)

@@ -15,6 +15,14 @@ func init() {
 type GoNativeMimeTypeProvider struct {
 }
 
+func (m *GoNativeMimeTypeProvider) Init() error {
+	return nil
+}
+
+func (m *GoNativeMimeTypeProvider) Close() error {
+	return nil
+}
+
 func (m *GoNativeMimeTypeProvider) MinimumBytes() int64 {
 	// according to the README of the filetype library we would only need 262, however
 	// issues point out this isn't always the case https://github.com/h2non/filetype/issues/107

@@ -41,11 +41,11 @@ func validatePart(part string) error {
 // Wrap around an existing StorageProvider and call ValidatePath on all the path arguments
 
 type ValidateWrapper struct {
-	Next storage.StorageProvider
+	proxy storage.StorageProvider
 }
 
 func (w *ValidateWrapper) InitUser(ctx context.Context, user *models.User) error {
-	return w.Next.InitUser(ctx, user)
+	return w.proxy.InitUser(ctx, user)
 }
 
 func (w *ValidateWrapper) Mkdir(ctx context.Context, user *models.User, path string) error {
@@ -53,7 +53,7 @@ func (w *ValidateWrapper) Mkdir(ctx context.Context, user *models.User, path str
 	if err != nil {
 		return err
 	}
-	return w.Next.Mkdir(ctx, user, path)
+	return w.proxy.Mkdir(ctx, user, path)
 }
 
 func (w *ValidateWrapper) Move(ctx context.Context, user *models.User, src string, dst string) error {
@@ -65,7 +65,7 @@ func (w *ValidateWrapper) Move(ctx context.Context, user *models.User, src strin
 	if err != nil {
 		return err
 	}
-	return w.Next.Move(ctx, user, src, dst)
+	return w.proxy.Move(ctx, user, src, dst)
 }
 
 func (w *ValidateWrapper) ListDirectory(ctx context.Context, user *models.User, path string) (<-chan storage.FileInfo, error) {
@@ -73,7 +73,7 @@ func (w *ValidateWrapper) ListDirectory(ctx context.Context, user *models.User, 
 	if err != nil {
 		return nil, err
 	}
-	return w.Next.ListDirectory(ctx, user, path)
+	return w.proxy.ListDirectory(ctx, user, path)
 }
 
 func (w *ValidateWrapper) File(ctx context.Context, user *models.User, fullpath string) (storage.File, error) {
@@ -81,7 +81,7 @@ func (w *ValidateWrapper) File(ctx context.Context, user *models.User, fullpath 
 	if err != nil {
 		return nil, err
 	}
-	return w.Next.File(ctx, user, fullpath)
+	return w.proxy.File(ctx, user, fullpath)
 }
 
 func (w *ValidateWrapper) Delete(ctx context.Context, user *models.User, fullpath string) error {
@@ -89,5 +89,5 @@ func (w *ValidateWrapper) Delete(ctx context.Context, user *models.User, fullpat
 	if err != nil {
 		return err
 	}
-	return w.Next.Delete(ctx, user, fullpath)
+	return w.proxy.Delete(ctx, user, fullpath)
 }
