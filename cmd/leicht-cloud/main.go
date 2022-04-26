@@ -74,6 +74,7 @@ func main() {
 	if err != nil {
 		logrus.Fatal(err)
 	}
+	defer fileinfo.Close()
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)

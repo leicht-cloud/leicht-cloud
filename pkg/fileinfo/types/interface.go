@@ -48,6 +48,9 @@ type FileInfoProvider interface {
 }
 
 type MimeTypeProvider interface {
+	Init() error
+	io.Closer
+
 	MinimumBytes() int64
 
 	MimeType(filename string, reader io.Reader) (*MimeType, error)
