@@ -37,11 +37,6 @@ func NewManager(pManager *plugin.Manager, prom *prometheus.Manager, mimetypeProv
 	}
 	out.mimeTypeProvider = mp
 
-	err = mp.Init()
-	if err != nil {
-		return nil, err
-	}
-
 	for _, name := range provider {
 		if strings.HasPrefix(name, "plugin:") {
 			name = strings.TrimPrefix(name, "plugin:")
