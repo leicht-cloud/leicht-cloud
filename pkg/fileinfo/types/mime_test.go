@@ -20,6 +20,10 @@ func TestParseMime(t *testing.T) {
 			},
 			err: nil,
 		},
+		{
+			in:  "",
+			err: ErrInvalidMime,
+		},
 	}
 
 	for _, unit := range units {

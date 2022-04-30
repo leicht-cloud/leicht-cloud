@@ -1,9 +1,12 @@
 package types
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 )
+
+var ErrInvalidMime = errors.New("Invalid mime")
 
 type MimeType struct {
 	Type    string `json:"type"`
@@ -12,6 +15,10 @@ type MimeType struct {
 
 func ParseMime(in string) (MimeType, error) {
 	split := strings.SplitN(in, "/", 2)
+
+	if len(split) != 2 {
+		return MimeType{}, ErrInvalidMime
+	}
 
 	return MimeType{
 		Type:    split[0],
