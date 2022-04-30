@@ -32,6 +32,7 @@ type Permissions struct {
 			ReadWrite  bool `yaml:"readwrite"`
 			WholeStore bool `yaml:"wholestore"`
 		} `yaml:"storage"`
+		FileOpener map[string]string `yaml:"file_opener"`
 	} `yaml:"app"`
 }
 

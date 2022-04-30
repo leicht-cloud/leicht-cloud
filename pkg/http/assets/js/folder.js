@@ -29,7 +29,7 @@ function fileInfo(file) {
     var offcanvas = new bootstrap.Offcanvas($('#offcanvasRight'));
     offcanvas.show();
 
-    var add = function (title, text, name) {
+    var addFileinfo = function (title, text, name) {
         var element = $(
                 '<div class="list-group-item justify-content-between text-break" style="font-family:monospace;"></div>')
             .text(text);
@@ -49,13 +49,26 @@ function fileInfo(file) {
         body.append(element);
     };
 
+    var addFileOpener = function(appname, mime) {
+        var element = $(
+            '<li><a class="dropdown-item" href="/apps/' + appname + '/open?mime=' + mime + '&file=' + file + '">' + appname + '</a></li>'
+        );
+
+        var parent = $('#fileinfoOpeners');
+        parent.append(element);
+    };
+
     var socket = new WebSocket("ws://" + document.location.host + "/webapi/fileinfo?filename=" + file);
     socket.onmessage = function (event) {
         var json = JSON.parse(event.data);
-        if (json.title != "") {
-            add(json.title, json.human, json.name);
+        if (json.apps !== undefined && json.mime !== undefined) {
+            for (let appname in json.apps) {
+                addFileOpener(appname, json.mime);
+            }
+        } else if (json.title != "") {
+            addFileinfo(json.title, json.human, json.name);
         } else {
-            add(json.name, json.human, json.name);
+            addFileinfo(json.name, json.human, json.name);
         }
     };
 };

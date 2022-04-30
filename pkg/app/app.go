@@ -3,6 +3,7 @@ package app
 import (
 	"crypto/ed25519"
 	"crypto/rand"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/golang-jwt/jwt"
+	"github.com/leicht-cloud/leicht-cloud/pkg/fileinfo/types"
 	"github.com/leicht-cloud/leicht-cloud/pkg/models"
 	"github.com/leicht-cloud/leicht-cloud/pkg/plugin"
 	"go.uber.org/multierr"
@@ -98,4 +100,18 @@ func (a *App) IFramePermissions() string {
 	}
 
 	return strings.Trim(out, " ")
+}
+
+var ErrNoMatch = errors.New("No match")
+
+func (a *App) Opener(mime types.MimeType) (string, error) {
+	openers := a.plugin.Manifest().Permissions.App.FileOpener
+
+	for pattern, path := range openers {
+		if mime.Match(pattern) {
+			return path, nil
+		}
+	}
+
+	return "", ErrNoMatch
 }

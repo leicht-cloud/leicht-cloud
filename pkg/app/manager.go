@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/leicht-cloud/leicht-cloud/pkg/fileinfo/types"
 	"github.com/leicht-cloud/leicht-cloud/pkg/models"
 	"github.com/leicht-cloud/leicht-cloud/pkg/plugin"
 	"github.com/leicht-cloud/leicht-cloud/pkg/prometheus"
@@ -134,6 +135,18 @@ func (m *Manager) Apps() []string {
 
 	for app := range m.apps {
 		out = append(out, app)
+	}
+
+	return out
+}
+
+func (m *Manager) Openers(mime types.MimeType) map[string]string {
+	out := make(map[string]string)
+	for name, app := range m.apps {
+		path, err := app.Opener(mime)
+		if err == nil {
+			out[name] = path
+		}
 	}
 
 	return out
