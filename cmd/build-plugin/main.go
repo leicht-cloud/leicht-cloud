@@ -37,17 +37,18 @@ func main() {
 		logrus.Fatal(err)
 	}
 
-	validTypes := []string{"fileinfo", "storage", "app"}
-	found := false
-
-	for _, typ := range validTypes {
-		if manifest.Type == typ {
-			found = true
+	warnings := manifest.Warnings()
+	fatal := false
+	for warning := range warnings {
+		if warning.Fatal {
+			logrus.Errorf("%s", warning)
+			fatal = true
+		} else {
+			logrus.Warnf("%s", warning)
 		}
 	}
-
-	if !found {
-		logrus.Fatalf("Invalid type: %s", manifest.Type)
+	if fatal {
+		os.Exit(1)
 	}
 
 	fout, err := os.OpenFile(filepath.Join(*outdir, fmt.Sprintf("%s.plugin", manifest.Name)), os.O_CREATE|os.O_WRONLY, 0600)

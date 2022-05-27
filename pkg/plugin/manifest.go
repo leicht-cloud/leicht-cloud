@@ -60,3 +60,40 @@ func parseManifest(r io.Reader, typ string) (*Manifest, error) {
 	}
 	return out, nil
 }
+
+type Warning struct {
+	error
+
+	Fatal bool
+}
+
+func (m *Manifest) Warnings() <-chan Warning {
+	ch := make(chan Warning)
+
+	go func(ch chan<- Warning) {
+		defer close(ch)
+
+		{
+			found := false
+			for _, typ := range []string{"fileinfo", "storage", "app"} {
+				if m.Type == typ {
+					found = true
+				}
+			}
+			if !found {
+				ch <- Warning{error: fmt.Errorf("%s is not a valid type", m.Type), Fatal: true}
+			}
+		}
+
+		if len(m.Permissions.App.FileOpener) > 0 {
+			if !m.Permissions.App.Storage.Enabled {
+				ch <- Warning{error: fmt.Errorf("Manifest has file openers specified, but storage library is disabled.")}
+			}
+			if !m.Permissions.App.Storage.WholeStore {
+				ch <- Warning{error: fmt.Errorf("Manifest has file openers specified, but will only have access to a subset. Which is currently not supported.")}
+			}
+		}
+	}(ch)
+
+	return ch
+}
