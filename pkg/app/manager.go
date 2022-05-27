@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
 	"path/filepath"
 	"strings"
 
@@ -107,16 +108,48 @@ func (m *Manager) GetApp(name string) (*App, error) {
 }
 
 func (m *Manager) Serve(user *models.User, w http.ResponseWriter, r *http.Request) {
-	logrus.Debugf("Incoming path: %s", r.URL.Path)
-	split := strings.SplitN(strings.TrimPrefix(r.URL.Path, "/apps/embed/"), "/", 2)
-	appname := split[0]
+	action := r.URL.Query().Get("action")
+	appname := ""
 	path := "/"
+
+	split := strings.SplitN(strings.TrimPrefix(r.URL.Path, "/apps/embed/"), "/", 2)
+	if len(split) < 2 {
+		http.Error(w, "Not enough parameters", http.StatusBadRequest)
+		return
+	}
+
+	appname = strings.Trim(split[0], "/")
 	if len(split) == 2 {
 		path = split[1]
 	}
 
-	logrus.Debugf("split: %#v", split)
-	logrus.Debugf("path: %s", path)
+	switch action {
+	// in case our action is open, we are being accessed through the "open app" menu in the fileinfo section
+	case "open":
+		app, err := m.GetApp(appname)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+
+		// we're just going to trust the mime type that was passed here
+		mime, err := types.ParseMime(r.URL.Query().Get("mime"))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// we check for any openers that would match our mime type
+		path, err = app.Opener(mime)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+
+		// and finally we replace %file% in the path string of the opener, with the actual filename
+		filename := r.URL.Query().Get("file")
+		path = strings.ReplaceAll(path, "%file%", url.QueryEscape(filename))
+	}
 
 	app, err := m.GetApp(appname)
 	if err != nil {

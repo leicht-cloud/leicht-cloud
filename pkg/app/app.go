@@ -58,7 +58,7 @@ type UserClaims struct {
 }
 
 func (a *App) Serve(user *models.User, w http.ResponseWriter, method, path string, body io.Reader) error {
-	uri, err := url.Parse(fmt.Sprintf("http://127.0.0.1/%s", path))
+	uri, err := url.Parse(fmt.Sprintf("http://127.0.0.1/%s", strings.TrimPrefix(path, "/")))
 	if err != nil {
 		return err
 	}

@@ -51,7 +51,7 @@ function fileInfo(file) {
 
     var addFileOpener = function(appname, mime) {
         var element = $(
-            '<li><a class="dropdown-item" href="/apps/' + appname + '/open?mime=' + mime + '&file=' + file + '">' + appname + '</a></li>'
+            '<li><a class="dropdown-item" href="/apps/' + appname + '/?action=open&mime=' + mime + '&file=' + file + '">' + appname + '</a></li>'
         );
 
         var parent = $('#fileinfoOpeners');

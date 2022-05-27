@@ -22,7 +22,7 @@
 
 <body>
     <div style="height:90%" class="container wrapper">
-        <iframe src="/apps/embed/{{ .App }}/" height="100%" width="100%" sandbox="allow-same-origin {{ .Permissions }}">
+        <iframe src="/apps/embed/{{ .App }}/{{ .Path }}" height="100%" width="100%" sandbox="allow-same-origin {{ .Permissions }}">
         </iframe>
     </div>
 </body>
