@@ -57,8 +57,13 @@ type UserClaims struct {
 	models.User
 }
 
-func (a *App) Serve(user *models.User, w http.ResponseWriter, method, path string, body io.Reader) error {
-	uri, err := url.Parse(fmt.Sprintf("http://127.0.0.1/%s", strings.TrimPrefix(path, "/")))
+func (a *App) Serve(user *models.User, w http.ResponseWriter, method, path string, query url.Values, headers http.Header, body io.Reader) error {
+	rawUri := fmt.Sprintf("http://127.0.0.1/%s", strings.TrimPrefix(path, "/"))
+	if len(query) > 0 {
+		rawUri = fmt.Sprintf("%s?%s", rawUri, query.Encode())
+	}
+
+	uri, err := url.Parse(rawUri)
 	if err != nil {
 		return err
 	}
@@ -67,6 +72,8 @@ func (a *App) Serve(user *models.User, w http.ResponseWriter, method, path strin
 	if err != nil {
 		return err
 	}
+
+	req.Header = headers
 
 	token := jwt.NewWithClaims(jwt.SigningMethodEdDSA, UserClaims{
 		User: *user,

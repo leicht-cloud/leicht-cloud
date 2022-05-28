@@ -108,7 +108,8 @@ func (m *Manager) GetApp(name string) (*App, error) {
 }
 
 func (m *Manager) Serve(user *models.User, w http.ResponseWriter, r *http.Request) {
-	action := r.URL.Query().Get("action")
+	query := r.URL.Query()
+	action := query.Get("action")
 	appname := ""
 	path := "/"
 
@@ -149,6 +150,7 @@ func (m *Manager) Serve(user *models.User, w http.ResponseWriter, r *http.Reques
 		// and finally we replace %file% in the path string of the opener, with the actual filename
 		filename := r.URL.Query().Get("file")
 		path = strings.ReplaceAll(path, "%file%", url.QueryEscape(filename))
+		query = nil
 	}
 
 	app, err := m.GetApp(appname)
@@ -157,7 +159,17 @@ func (m *Manager) Serve(user *models.User, w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	err = app.Serve(user, w, r.Method, path, r.Body)
+	header := make(http.Header)
+
+	// TODO: Investigate what other headers we will want to just directly proxy here
+	for _, key := range []string{"Content-Type"} {
+		value, ok := r.Header[key]
+		if ok {
+			header[key] = value
+		}
+	}
+
+	err = app.Serve(user, w, r.Method, path, query, header, r.Body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
