@@ -60,9 +60,10 @@ func (h *loginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		http.SetCookie(w, &http.Cookie{
-			Name:   "auth",
-			Value:  token,
-			MaxAge: 86400,
+			Name:     "auth",
+			Value:    token,
+			MaxAge:   86400,
+			HttpOnly: true,
 		})
 		http.Redirect(w, r, "/", http.StatusMovedPermanently)
 	} else {
