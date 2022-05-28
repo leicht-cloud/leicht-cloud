@@ -45,6 +45,10 @@ func (m *Manager) newPluginInstance(manifest *Manifest, cfg *Config, name string
 	}
 	// we initialize httpClient seperate, as it needs an initialized plugin already for the httpSocketFile call
 	p.httpClient = http.Client{
+		// as we intend to act as a proxy, we are not actually handling redirects at all
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
 		Transport: &http.Transport{
 			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
 				return net.Dial("unix", p.httpSocketFile())

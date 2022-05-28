@@ -93,7 +93,24 @@ func (a *App) Serve(user *models.User, w http.ResponseWriter, method, path strin
 	}
 	defer resp.Body.Close()
 
-	_, err = io.Copy(w, resp.Body)
+	// if our status code range is in the 300, we have to manually extract and rewrite the redirect
+	if resp.StatusCode >= 300 && resp.StatusCode <= 399 {
+		// check if there's an actual location header
+		location := resp.Header.Get("Location")
+		if location == "" {
+			return fmt.Errorf("No Location header")
+		}
+
+		// and redirect to it
+		// TODO: Automatically add /apps/embed/<app>/ in front of it
+		http.Redirect(w, req, location, resp.StatusCode)
+	} else {
+		// plain proxy the status code
+		w.WriteHeader(resp.StatusCode)
+
+		// and copy the entire body
+		_, err = io.Copy(w, resp.Body)
+	}
 
 	return err
 }
