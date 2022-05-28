@@ -106,6 +106,10 @@ func (a *App) IFramePermissions() string {
 		out += "allow-scripts "
 	}
 
+	if manifest.Permissions.App.Forms {
+		out += "allow-forms "
+	}
+
 	return strings.Trim(out, " ")
 }
 
