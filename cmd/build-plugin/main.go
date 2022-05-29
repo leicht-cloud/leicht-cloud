@@ -32,7 +32,7 @@ func main() {
 	}
 	path := flag.Arg(0)
 
-	manifest, err := plugin.ParseManifestFromFile(path, "")
+	manifest, err := plugin.ParseManifestFromFile(path)
 	if err != nil {
 		logrus.Fatal(err)
 	}

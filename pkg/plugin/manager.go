@@ -133,9 +133,12 @@ func (m *Manager) prepareDirectory(name, typ string) (*Manifest, error) {
 					return nil, err
 				}
 				if header.Name == "plugin.manifest.yml" {
-					manifest, err = parseManifest(tr, typ)
+					manifest, err = parseManifest(tr)
 					if err != nil {
 						return nil, err
+					}
+					if manifest.Type != typ {
+						return nil, fmt.Errorf("Incorrect type, got: %s, expected: %s", manifest.Type, typ)
 					}
 				} else if header.Name == wantedExecutable {
 					dst, err := os.OpenFile(pluginFile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, plugin_permissions)
@@ -165,9 +168,12 @@ func (m *Manager) prepareDirectory(name, typ string) (*Manifest, error) {
 		dir := filepath.Join(path, name)
 		fi, err := os.Stat(dir)
 		if err == nil && fi.IsDir() {
-			manifest, err := ParseManifestFromFile(filepath.Join(path, name), typ)
+			manifest, err := ParseManifestFromFile(filepath.Join(path, name))
 			if err != nil {
 				return nil, err
+			}
+			if manifest.Type != typ {
+				return nil, fmt.Errorf("Incorrect type, got: %s, expected: %s", manifest.Type, typ)
 			}
 			src, err := os.Open(filepath.Join(dir, name))
 			if err != nil {

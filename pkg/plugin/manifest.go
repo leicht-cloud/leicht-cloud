@@ -38,16 +38,16 @@ type Permissions struct {
 }
 
 // path should be the path to the plugin, not directly to the manifest
-func ParseManifestFromFile(path, typ string) (*Manifest, error) {
+func ParseManifestFromFile(path string) (*Manifest, error) {
 	f, err := os.Open(filepath.Join(path, "plugin.manifest.yml"))
 	if err != nil {
 		return nil, err
 	}
 	defer f.Close()
-	return parseManifest(f, typ)
+	return parseManifest(f)
 }
 
-func parseManifest(r io.Reader, typ string) (*Manifest, error) {
+func parseManifest(r io.Reader) (*Manifest, error) {
 	out := &Manifest{}
 	err := yaml.NewDecoder(r).Decode(out)
 	if err != nil {
@@ -55,9 +55,6 @@ func parseManifest(r io.Reader, typ string) (*Manifest, error) {
 	}
 	if out.Name == "" {
 		return nil, ErrNoName
-	}
-	if typ != "" && out.Type != typ {
-		return nil, fmt.Errorf("Unwanted type: %s", out.Type)
 	}
 	return out, nil
 }
