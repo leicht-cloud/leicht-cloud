@@ -192,7 +192,7 @@ func (h *rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	
 	<body>
 		<div style="height:90%%" class="container wrapper">
-			<iframe src="/apps/embed/%s/" height="100%%" width="100%%" sandbox="allow-same-origin %s">
+			<iframe src="/apps/embed/%s/" height="100%%" width="100%%" sandbox="%s">
 			</iframe>
 		</div>
 	</body>
