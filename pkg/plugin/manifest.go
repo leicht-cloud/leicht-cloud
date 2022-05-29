@@ -86,8 +86,7 @@ func (m *Manifest) Warnings() <-chan Warning {
 		if len(m.Permissions.App.FileOpener) > 0 {
 			if !m.Permissions.App.Storage.Enabled {
 				ch <- Warning{error: fmt.Errorf("Manifest has file openers specified, but storage library is disabled.")}
-			}
-			if !m.Permissions.App.Storage.WholeStore {
+			} else if !m.Permissions.App.Storage.WholeStore {
 				ch <- Warning{error: fmt.Errorf("Manifest has file openers specified, but will only have access to a subset. Which is currently not supported.")}
 			}
 		}
