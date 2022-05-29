@@ -2,7 +2,6 @@
 
 [![License](https://img.shields.io/github/license/leicht-cloud/leicht-cloud.svg)](https://github.com/leicht-cloud/leicht-cloud/blob/master/LICENSE)
 [![Gitlab pipeline status](https://gitlab.com/leicht-cloud/leicht-cloud/badges/master/pipeline.svg)](https://gitlab.com/leicht-cloud/leicht-cloud)
-[![Gitlab coverage](https://gitlab.com/leicht-cloud/leicht-cloud/badges/master/coverage.svg)](https://gitlab.com/leicht-cloud/leicht-cloud)
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/leicht-cloud/leicht-cloud)
 
 This is still pre-alpha software as of now.
