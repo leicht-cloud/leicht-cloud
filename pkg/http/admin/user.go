@@ -14,14 +14,12 @@ import (
 
 type userHandler struct {
 	StaticHandler http.Handler
-	AdminNavbar   template.AdminNavbarData
 	DB            *gorm.DB
 }
 
 type userTemplateData struct {
-	Navbar      template.NavbarData
-	AdminNavbar template.AdminNavbarData
-	User        models.User
+	Navbar template.NavbarData
+	User   models.User
 
 	UploadLimit      models.UploadLimit
 	UploadLimitHuman struct {
@@ -176,7 +174,6 @@ func (h *userHandler) Serve(user *models.User, w http.ResponseWriter, r *http.Re
 		Navbar: template.NavbarData{
 			Admin: user.Admin,
 		},
-		AdminNavbar: h.AdminNavbar,
 	}
 
 	user, err := h.GetIntendedUser(r)

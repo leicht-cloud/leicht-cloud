@@ -51,7 +51,7 @@ func fromConfig(cfg *Config, pManager *plugin.Manager) (storage.StorageProvider,
 
 		store, err := storagePlugin.NewGrpcStorage(conn, cfg.Extra)
 		if err != nil {
-			stdout := plugin.Stdout()
+			stdout := plugin.StdoutDump()
 			if len(stdout) > 0 {
 				logrus.Infof("-----STDOUT FOR PLUGIN: %s-----", name)
 				_, _ = io.Copy(os.Stdout, bytes.NewReader(stdout))

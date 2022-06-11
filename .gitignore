@@ -4,6 +4,7 @@ pkg/http/assets/js/lib/
 # binaries
 /leicht-cloud
 /build-plugin
+/run-app
 
 # files to help with testing
 *.db

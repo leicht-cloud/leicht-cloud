@@ -12,7 +12,14 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func NewHandler(assets fs.FS) (out *TemplateHandler, err error) {
+// Yes, having this as a global is a dirty hack. But then again, you don't want to run your production builds
+// with the html tag anyway.
+var _apps, _plugins []string
+
+func NewHandler(assets fs.FS, apps, plugins []string) (out *TemplateHandler, err error) {
+	_apps = apps
+	_plugins = plugins
+
 	return &TemplateHandler{
 		assets:      assets,
 		template:    nil,
@@ -24,7 +31,7 @@ func getTemplate(assets fs.FS, name string) (*template.Template, error) {
 	// we first create an empty template so we can first attach the funcmap
 	tmpl := template.New("")
 
-	funcMap, err := createFuncMap(assets)
+	funcMap, err := createFuncMap(assets, _apps, _plugins)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +72,7 @@ func (t *TemplateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func tmplFunc(assets fs.FS, name string) func(data interface{}) (template.HTML, error) {
+func tmplFunc(assets fs.FS, name string, funcMap template.FuncMap) func(data interface{}) (template.HTML, error) {
 	// then we return a function with this specific template, resulting in it only being parsed once
 	// TODO: Ideally we'd be writing directly to the main template somehow, rather than first writing into a string/buffer
 	return func(data interface{}) (template.HTML, error) {

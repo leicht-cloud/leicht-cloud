@@ -11,6 +11,16 @@
         <li class="nav-item">
           <a class="nav-link active" aria-current="page" href="/">Home</a>
         </li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            Apps
+          </a>
+          <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+            {{ range $i, $app := apps }}
+            <li><a class="dropdown-item" href="/apps/{{ $app }}">{{ $app }}</a></li>
+            {{ end }}
+          </ul>
+        </li>
         {{ if .Admin }}
         <li class="nav-item">
           <a class="nav-link active" aria-current="page" href="/admin">Admin</a>

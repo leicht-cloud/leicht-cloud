@@ -2,10 +2,8 @@
 
 <head>
     <link href="/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
-    <link href="/css/xterm.css" rel="stylesheet" crossorigin="anonymous">
     <script src="/js/lib/bootstrap.bundle.min.js"></script>
     <script src="/js/lib/jquery.min.js"></script>
-    <script src="/js/lib/xterm.min.js"></script>
 
     {{ navbar .Navbar }}
 
@@ -23,12 +21,9 @@
 </head>
 
 <body>
-    <div class="container wrapper">
-
-        {{ adminnavbar . }}
-
-        <div id="content">
-        </div>
+    <div style="height:90%" class="container wrapper">
+        <iframe src="/apps/embed/{{ .App }}/{{ .Path }}" height="100%" width="100%" sandbox="{{ .Permissions }}">
+        </iframe>
     </div>
 </body>
 

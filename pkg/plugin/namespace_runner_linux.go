@@ -84,7 +84,7 @@ func (n *namespaceFactory) Create(opts *RunOptions) (Runner, error) {
 
 	// in the case of no network permission, we still go into a network namespace
 	// with the difference that we never set up the network
-	if opts.Manifest.Permissions.Network {
+	if opts.Manifest.Permissions.Container.Network {
 		out.cmd.Env = append(out.cmd.Env, fmt.Sprintf("NETWORK=%s", n.NetworkMode))
 
 		netFactory, ok := network_modes[n.NetworkMode]

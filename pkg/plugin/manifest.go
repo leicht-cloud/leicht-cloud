@@ -22,20 +22,32 @@ type Manifest struct {
 }
 
 type Permissions struct {
-	Network bool `yaml:"network"`
+	Container struct {
+		Network bool `yaml:"network"`
+	} `yaml:"container"`
+	App struct {
+		Javascript bool `yaml:"javascript"`
+		Forms      bool `yaml:"forms"`
+		Storage    struct {
+			Enabled    bool `yaml:"enabled"`
+			ReadWrite  bool `yaml:"readwrite"`
+			WholeStore bool `yaml:"wholestore"`
+		} `yaml:"storage"`
+		FileOpener map[string]string `yaml:"file_opener"`
+	} `yaml:"app"`
 }
 
 // path should be the path to the plugin, not directly to the manifest
-func ParseManifestFromFile(path, typ string) (*Manifest, error) {
+func ParseManifestFromFile(path string) (*Manifest, error) {
 	f, err := os.Open(filepath.Join(path, "plugin.manifest.yml"))
 	if err != nil {
 		return nil, err
 	}
 	defer f.Close()
-	return parseManifest(f, typ)
+	return parseManifest(f)
 }
 
-func parseManifest(r io.Reader, typ string) (*Manifest, error) {
+func parseManifest(r io.Reader) (*Manifest, error) {
 	out := &Manifest{}
 	err := yaml.NewDecoder(r).Decode(out)
 	if err != nil {
@@ -44,8 +56,41 @@ func parseManifest(r io.Reader, typ string) (*Manifest, error) {
 	if out.Name == "" {
 		return nil, ErrNoName
 	}
-	if typ != "" && out.Type != typ {
-		return nil, fmt.Errorf("Unwanted type: %s", out.Type)
-	}
 	return out, nil
+}
+
+type Warning struct {
+	error
+
+	Fatal bool
+}
+
+func (m *Manifest) Warnings() <-chan Warning {
+	ch := make(chan Warning)
+
+	go func(ch chan<- Warning) {
+		defer close(ch)
+
+		{
+			found := false
+			for _, typ := range []string{"fileinfo", "storage", "app"} {
+				if m.Type == typ {
+					found = true
+				}
+			}
+			if !found {
+				ch <- Warning{error: fmt.Errorf("%s is not a valid type", m.Type), Fatal: true}
+			}
+		}
+
+		if len(m.Permissions.App.FileOpener) > 0 {
+			if !m.Permissions.App.Storage.Enabled {
+				ch <- Warning{error: fmt.Errorf("Manifest has file openers specified, but storage library is disabled.")}
+			} else if !m.Permissions.App.Storage.WholeStore {
+				ch <- Warning{error: fmt.Errorf("Manifest has file openers specified, but will only have access to a subset. Which is currently not supported.")}
+			}
+		}
+	}(ch)
+
+	return ch
 }

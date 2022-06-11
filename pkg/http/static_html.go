@@ -7,6 +7,6 @@ import (
 	"os"
 )
 
-func initStatic() (fs.FS, error) {
+func InitStatic() (fs.FS, error) {
 	return os.DirFS("assets"), nil
 }

@@ -73,15 +73,6 @@ type MimeTypeProvider interface {
 	MimeType(filename string, reader io.Reader) (*MimeType, error)
 }
 
-type MimeType struct {
-	Type    string `json:"type"`
-	SubType string `json:"subtype"`
-}
-
-func (m MimeType) String() string {
-	return fmt.Sprintf("%s/%s", m.Type, m.SubType)
-}
-
 type Result struct {
 	Name  string `json:"name"`
 	Data  []byte `json:"data"`

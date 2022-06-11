@@ -52,7 +52,7 @@ func NewManager(pManager *plugin.Manager, prom *prometheus.Manager, mimetypeProv
 
 			provider, err := fileinfoPlugin.NewGrpcFileinfo(conn)
 			if err != nil {
-				stdout := plugin.Stdout()
+				stdout := plugin.StdoutDump()
 				if len(stdout) > 0 {
 					logrus.Infof("-----STDOUT FOR PLUGIN: %s-----", name)
 					_, _ = io.Copy(os.Stdout, bytes.NewReader(stdout))

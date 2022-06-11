@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/websocket"
+	"github.com/leicht-cloud/leicht-cloud/pkg/app"
 	"github.com/leicht-cloud/leicht-cloud/pkg/auth"
 	"github.com/leicht-cloud/leicht-cloud/pkg/fileinfo"
 	_ "github.com/leicht-cloud/leicht-cloud/pkg/fileinfo/builtin"
@@ -17,10 +18,11 @@ import (
 type fileInfoHandler struct {
 	Storage  storage.StorageProvider
 	FileInfo *fileinfo.Manager
+	Apps     *app.Manager
 }
 
-func newFileInfoHandler(store storage.StorageProvider, fileinfo *fileinfo.Manager) http.Handler {
-	return auth.AuthHandler(&fileInfoHandler{Storage: store, FileInfo: fileinfo})
+func newFileInfoHandler(store storage.StorageProvider, fileinfo *fileinfo.Manager, apps *app.Manager) http.Handler {
+	return auth.AuthHandler(&fileInfoHandler{Storage: store, FileInfo: fileinfo, Apps: apps})
 }
 
 var websocketUpgrader = websocket.Upgrader{
@@ -44,11 +46,26 @@ func (h *fileInfoHandler) Serve(user *models.User, w http.ResponseWriter, r *htt
 		return
 	}
 
+	apps := h.Apps.Openers(out.MimeType)
+
 	if websocket.IsWebSocketUpgrade(r) {
 		conn, err := websocketUpgrader.Upgrade(w, r, nil)
 		if err != nil {
 			logrus.Error(err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		err = conn.WriteJSON(struct {
+			Apps map[string]string `json:"apps"`
+			Mime string            `json:"mime"`
+		}{
+			Apps: apps,
+			Mime: out.MimeType.String(),
+		})
+		if err != nil {
+			logrus.Error(err)
+			conn.Close()
 			return
 		}
 
@@ -78,10 +95,13 @@ func (h *fileInfoHandler) Serve(user *models.User, w http.ResponseWriter, r *htt
 		}
 
 		output := struct {
-			*fileinfo.Output
 			Results map[string]types.Result `json:"data"`
+			Apps    map[string]string       `json:"apps"`
+			Mime    string                  `json:"mime"`
 		}{
-			out, outputs,
+			Results: outputs,
+			Apps:    apps,
+			Mime:    out.MimeType.String(),
 		}
 
 		err = json.NewEncoder(w).Encode(output)

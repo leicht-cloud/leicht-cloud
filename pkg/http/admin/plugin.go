@@ -11,7 +11,6 @@ import (
 )
 
 type pluginHandler struct {
-	AdminNavbar   template.AdminNavbarData
 	StaticHandler http.Handler
 }
 
@@ -20,12 +19,10 @@ func (h *pluginHandler) Serve(user *models.User, w http.ResponseWriter, r *http.
 	r.URL.Path = "/admin.pluginview.gohtml"
 
 	ctx := template.AttachTemplateData(r.Context(), struct {
-		Name        string
-		AdminNavbar template.AdminNavbarData
-		Navbar      template.NavbarData
+		Name   string
+		Navbar template.NavbarData
 	}{
-		Name:        r.URL.Query().Get("name"),
-		AdminNavbar: h.AdminNavbar,
+		Name: r.URL.Query().Get("name"),
 		Navbar: template.NavbarData{
 			Admin: user.Admin,
 		},
