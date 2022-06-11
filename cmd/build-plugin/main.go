@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 
 	"github.com/leicht-cloud/leicht-cloud/pkg/plugin"
 	"github.com/sirupsen/logrus"
@@ -55,15 +56,24 @@ func main() {
 	if err != nil {
 		logrus.Fatal(err)
 	}
+	logrus.Infof("Packaging to %s", fout.Name())
 	defer fout.Close()
 	defer func(src string) {
-		err := os.Rename(src, filepath.Join(*outdir, fmt.Sprintf("%s.plugin", manifest.Name)))
+		output := filepath.Join(*outdir, fmt.Sprintf("%s.plugin", manifest.Name))
+		logrus.Infof("Moving output to %s", output)
+		err := os.Rename(src, output)
 		if err != nil {
 			logrus.Error(err)
 		}
 	}(fout.Name())
 
-	gw, err := gzip.NewWriterLevel(fout, gzip.BestCompression)
+	// for debug builds we use gzip.BestSpeed to speed up packaging ever so slightly
+	var gw *gzip.Writer
+	if *debug {
+		gw, err = gzip.NewWriterLevel(fout, gzip.BestSpeed)
+	} else {
+		gw, err = gzip.NewWriterLevel(fout, gzip.BestCompression)
+	}
 	if err != nil {
 		logrus.Fatal(err)
 	}
@@ -82,11 +92,19 @@ func main() {
 		logrus.Fatal(err)
 	}
 
-	for _, platform := range platforms {
-		for _, arch := range arches {
-			err = buildPlugin(path, tw, platform, arch, *debug)
-			if err != nil {
-				logrus.Fatal(err)
+	// in the case of debug builds we only build OUR architecture, just to speed up the development cycle
+	if *debug {
+		err = buildPlugin(path, tw, runtime.GOOS, runtime.GOARCH, *debug)
+		if err != nil {
+			logrus.Fatal(err)
+		}
+	} else {
+		for _, platform := range platforms {
+			for _, arch := range arches {
+				err = buildPlugin(path, tw, platform, arch, *debug)
+				if err != nil {
+					logrus.Fatal(err)
+				}
 			}
 		}
 	}
