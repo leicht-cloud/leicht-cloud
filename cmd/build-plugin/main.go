@@ -51,11 +51,17 @@ func main() {
 		os.Exit(1)
 	}
 
-	fout, err := os.OpenFile(filepath.Join(*outdir, fmt.Sprintf("%s.plugin", manifest.Name)), os.O_CREATE|os.O_WRONLY, 0600)
+	fout, err := os.CreateTemp(*outdir, fmt.Sprintf("%s.plugin.*", manifest.Name))
 	if err != nil {
 		logrus.Fatal(err)
 	}
 	defer fout.Close()
+	defer func(src string) {
+		err := os.Rename(src, filepath.Join(*outdir, fmt.Sprintf("%s.plugin", manifest.Name)))
+		if err != nil {
+			logrus.Error(err)
+		}
+	}(fout.Name())
 
 	gw, err := gzip.NewWriterLevel(fout, gzip.BestCompression)
 	if err != nil {
