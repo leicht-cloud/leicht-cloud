@@ -11,6 +11,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/leicht-cloud/leicht-cloud/pkg/app"
 	"github.com/leicht-cloud/leicht-cloud/pkg/auth"
@@ -70,15 +71,10 @@ func main() {
 		logrus.Fatal(err)
 	}
 
-	appManager, err := app.NewManager(pluginManager, store, nil, appname)
+	appManager, err := app.NewManager(pluginManager, store, nil)
 	if err != nil {
 		logrus.Fatal(err)
 	}
-	appInstance, err := appManager.GetApp(appname)
-	if err != nil {
-		logrus.Fatal(err)
-	}
-	plugin := appInstance.GetPlugin()
 
 	mux := http.NewServeMux()
 	mux.Handle("/apps/embed/", auth.AuthHandler(appManager))
@@ -88,9 +84,9 @@ func main() {
 	}
 	mux.Handle("/", &rootHandler{
 		Auth:          authProvider,
+		AppManager:    appManager,
 		StaticHandler: http.FileServer(http.FS(assets)),
 		appname:       appname,
-		permissions:   appInstance.IFramePermissions(),
 	})
 
 	httpServer := http.Server{
@@ -105,18 +101,49 @@ func main() {
 		}
 	}()
 
+	appInstance, err := appManager.StartApp(appname)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	plugin := appInstance.GetPlugin()
+
 	logrus.Info("Switching to plugin stdout")
 	stdout := plugin.Stdout()
-	defer stdout.Close()
 	go io.Copy(os.Stdout, stdout) // nolint:errcheck
+
+	chFileChange := detectFileChanges(path)
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 
-	<-c
-	logrus.Info("Closing server")
+	for {
+		select {
+		case <-chFileChange:
+			logrus.Infof("Detected changes in %s, restarting app", path)
+			err = appManager.StopApp(appname)
+			if err != nil {
+				logrus.Fatalf("Failed to stop app: %s", err)
+			}
+			appInstance, err := appManager.StartApp(appname)
+			if err != nil {
+				logrus.Fatal(err)
+			}
+			plugin = appInstance.GetPlugin()
 
-	httpServer.Close()
+			logrus.Info("Switching to plugin stdout")
+			if stdout != nil {
+				stdout.Close() // we close the previous stdout, mainly so we don't leak goroutine and memories of previous stdouts
+			}
+			stdout = plugin.Stdout()
+			go io.Copy(os.Stdout, stdout) // nolint:errcheck
+
+		case <-c:
+			logrus.Info("Closing server")
+
+			httpServer.Close()
+			return
+		}
+	}
 }
 
 func setupAuthProvider(path string) (*gorm.DB, *auth.Provider, error) {
@@ -157,10 +184,10 @@ func setupAuthProvider(path string) (*gorm.DB, *auth.Provider, error) {
 
 type rootHandler struct {
 	Auth          *auth.Provider
+	AppManager    *app.Manager
 	StaticHandler http.Handler
 
-	appname     string
-	permissions string
+	appname string
 }
 
 func (h *rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -182,6 +209,12 @@ func (h *rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	app, err := h.AppManager.GetApp(h.appname)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	fmt.Fprintf(w, `<html>
 
 	<head>
@@ -197,5 +230,30 @@ func (h *rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		</div>
 	</body>
 	
-	</html>`, h.appname, h.permissions)
+	</html>`, h.appname, app.IFramePermissions())
+}
+
+func detectFileChanges(path string) <-chan time.Time {
+	ch := make(chan time.Time)
+
+	go func(ch chan<- time.Time) {
+		stat, err := os.Stat(path)
+		if err != nil {
+			logrus.Fatalf("file %s doesn't exist?: %s", path, err)
+		}
+		last := stat.ModTime()
+		for range time.Tick(time.Second) {
+			stat, err := os.Stat(path)
+			if err != nil {
+				logrus.Fatalf("plugin gone? Shutting down: %s", err)
+			}
+			mod := stat.ModTime()
+			if mod.After(last) {
+				last = mod
+				ch <- mod
+			}
+		}
+	}(ch)
+
+	return ch
 }
