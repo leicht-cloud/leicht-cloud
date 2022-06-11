@@ -45,7 +45,7 @@ func (a *App) Close() error {
 		err = multierr.Append(err, closer.Close())
 	}
 
-	return err
+	return multierr.Combine(err, a.plugin.Close())
 }
 
 func (a *App) GetPlugin() plugin.PluginInterface {

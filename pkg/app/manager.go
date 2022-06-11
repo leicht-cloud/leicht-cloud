@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/leicht-cloud/leicht-cloud/pkg/fileinfo/types"
 	"github.com/leicht-cloud/leicht-cloud/pkg/models"
@@ -21,35 +22,24 @@ import (
 )
 
 type Manager struct {
-	apps map[string]*App
+	sync.RWMutex
+	pManager *plugin.Manager
+	store    storage.StorageProvider
+	apps     map[string]*App
 }
 
 func NewManager(pManager *plugin.Manager, store storage.StorageProvider, prom *prometheus.Manager, apps ...string) (*Manager, error) {
 	out := &Manager{
-		apps: make(map[string]*App),
+		pManager: pManager,
+		store:    store,
+		apps:     make(map[string]*App),
 	}
 
 	for _, name := range apps {
-		plugin, err := pManager.Start(name, "app")
+		_, err := out.StartApp(name)
 		if err != nil {
 			return nil, err
 		}
-
-		app, err := newApp(plugin)
-		if err != nil {
-			return nil, err
-		}
-
-		manifest := plugin.Manifest()
-
-		if manifest.Permissions.App.Storage.Enabled {
-			err = app.setupStorage(store, manifest.Permissions.App.Storage.ReadWrite, manifest.Permissions.App.Storage.WholeStore)
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		out.apps[name] = app
 	}
 
 	return out, nil
@@ -61,6 +51,57 @@ func (m *Manager) Close() error {
 		err = multierr.Append(err, app.Close())
 	}
 	return err
+}
+
+func (m *Manager) StartApp(appname string) (*App, error) {
+	m.Lock()
+	defer m.Unlock()
+
+	app, ok := m.apps[appname]
+	if ok {
+		return app, nil
+	}
+
+	plugin, err := m.pManager.Start(appname, "app")
+	if err != nil {
+		return nil, err
+	}
+
+	app, err = newApp(plugin)
+	if err != nil {
+		return nil, err
+	}
+
+	manifest := plugin.Manifest()
+
+	if manifest.Permissions.App.Storage.Enabled {
+		err = app.setupStorage(m.store, manifest.Permissions.App.Storage.ReadWrite, manifest.Permissions.App.Storage.WholeStore)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	m.apps[appname] = app
+	return app, nil
+}
+
+func (m *Manager) StopApp(appname string) error {
+	m.Lock()
+	defer m.Unlock()
+
+	app, ok := m.apps[appname]
+	if !ok {
+		// no app to stop, lol
+		return nil
+	}
+
+	err := app.Close()
+	if err != nil {
+		return err
+	}
+
+	delete(m.apps, appname)
+	return nil
 }
 
 func (a *App) setupStorage(store storage.StorageProvider, readwrite, wholestore bool) error {
@@ -99,6 +140,9 @@ func (a *App) setupStorage(store storage.StorageProvider, readwrite, wholestore 
 }
 
 func (m *Manager) GetApp(name string) (*App, error) {
+	m.RLock()
+	defer m.RUnlock()
+
 	app, ok := m.apps[name]
 	if !ok {
 		return nil, fmt.Errorf("App not found: %s", name)
@@ -176,6 +220,9 @@ func (m *Manager) Serve(user *models.User, w http.ResponseWriter, r *http.Reques
 }
 
 func (m *Manager) Apps() []string {
+	m.RLock()
+	defer m.RUnlock()
+
 	out := make([]string, 0)
 
 	for app := range m.apps {
@@ -186,6 +233,9 @@ func (m *Manager) Apps() []string {
 }
 
 func (m *Manager) Openers(mime types.MimeType) map[string]string {
+	m.RLock()
+	defer m.RUnlock()
+
 	out := make(map[string]string)
 	for name, app := range m.apps {
 		path, err := app.Opener(mime)
