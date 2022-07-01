@@ -14,8 +14,9 @@ import (
 
 // Config structure of the config file
 type Config struct {
-	Debug bool   `yaml:"debug"`
-	DB    string `yaml:"db"`
+	Debug    bool   `yaml:"debug"`
+	DB       string `yaml:"db"`
+	HttpAddr string `yaml:"addr"`
 
 	Storage    storage.Config    `yaml:"storage"`
 	Plugin     plugin.Config     `yaml:"plugin"`

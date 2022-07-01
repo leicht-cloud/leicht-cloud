@@ -87,7 +87,7 @@ func main() {
 	signal.Notify(c, os.Interrupt)
 
 	logrus.Info("Initialing http server")
-	server, err := gchttp.InitHttpServer(db, auth, storage, pluginManager, apps, fileinfo)
+	server, err := gchttp.InitHttpServer(config.HttpAddr, db, auth, storage, pluginManager, apps, fileinfo)
 	if err != nil {
 		logrus.Fatal(err)
 	}

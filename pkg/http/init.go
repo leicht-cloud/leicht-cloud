@@ -15,6 +15,7 @@ import (
 )
 
 func InitHttpServer(
+	addr string,
 	db *gorm.DB,
 	authProvider *auth.Provider,
 	storage storage.StorageProvider,
@@ -22,6 +23,10 @@ func InitHttpServer(
 	apps *app.Manager,
 	fileinfo *fileinfo.Manager,
 ) (*http.Server, error) {
+	if addr == "" {
+		addr = ":8080"
+	}
+
 	assets, err := InitStatic()
 	if err != nil {
 		return nil, err
@@ -41,7 +46,7 @@ func InitHttpServer(
 	admin.Init(mux, authProvider, templateHandler, pluginManager, db)
 
 	out := &http.Server{
-		Addr: ":8080",
+		Addr: addr,
 		Handler: auth.AuthMiddleware(authProvider,
 			WithLogging(mux),
 		),
